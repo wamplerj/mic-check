@@ -1,6 +1,8 @@
+using MicCheck.Api.Users;
+
 namespace MicCheck.Api.Auth;
 
 public interface ITokenService
 {
-    TokenResponse GenerateToken(string username);
+    TokenResponse GenerateToken(User user);
 }

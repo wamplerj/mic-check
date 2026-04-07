@@ -1,13 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MicCheck.Api.Users;
 using Microsoft.IdentityModel.Tokens;
 
 namespace MicCheck.Api.Auth;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public TokenResponse GenerateToken(string username)
+    public TokenResponse GenerateToken(User user)
     {
         var secretKey = configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
@@ -21,15 +22,23 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
         var expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim(JwtRegisteredClaimNames.Name, username),
-            new Claim(JwtRegisteredClaimNames.Iat,
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(JwtRegisteredClaimNames.GivenName, user.FirstName),
+            new(JwtRegisteredClaimNames.FamilyName, user.LastName),
+            new(JwtRegisteredClaimNames.Iat,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
                 ClaimValueTypes.Integer64),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
+
+        foreach (var org in user.Organizations)
+        {
+            claims.Add(new Claim("OrganizationId", org.OrganizationId.ToString()));
+            claims.Add(new Claim("OrganizationRole", org.Role.ToString()));
+        }
 
         var token = new JwtSecurityToken(
             issuer: issuer,
