@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Audit;
 using MicCheck.Api.Auth;
 using MicCheck.Api.Authentication;
 using MicCheck.Api.Authorization;
@@ -10,12 +11,16 @@ using MicCheck.Api.Data;
 using MicCheck.Api.Environments;
 using MicCheck.Api.Features;
 using MicCheck.Api.Identities;
+using MicCheck.Api.Organizations;
+using MicCheck.Api.Projects;
 using MicCheck.Api.Segments;
 using MicCheck.Api.Users;
+using MicCheck.Api.Webhooks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -36,7 +41,10 @@ try
               .WriteTo.Console());
 
     builder.Services.AddOpenApi();
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+            options.JsonSerializerOptions.Converters.Add(
+                new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
     builder.Services.AddAuthentication()
         .AddScheme<AuthenticationSchemeOptions, EnvironmentKeyAuthenticationHandler>(
@@ -86,6 +94,19 @@ try
     builder.Services.AddFluentValidationAutoValidation();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(e => e.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
+            return new UnprocessableEntityObjectResult(new { errors });
+        };
+    });
+
     builder.Services.AddMemoryCache();
 
     builder.Services.AddScoped<ITokenService, TokenService>();
@@ -99,6 +120,17 @@ try
     builder.Services.AddScoped<EnvironmentDocumentService>();
     builder.Services.AddSingleton<SegmentEvaluator>();
     builder.Services.AddSingleton<FlagCache>();
+    builder.Services.AddScoped<AuditService>();
+    builder.Services.AddScoped<AuditLogQueryService>();
+    builder.Services.AddScoped<OrganizationService>();
+    builder.Services.AddScoped<ProjectService>();
+    builder.Services.AddScoped<EnvironmentService>();
+    builder.Services.AddScoped<FeatureService>();
+    builder.Services.AddScoped<FeatureStateService>();
+    builder.Services.AddScoped<SegmentService>();
+    builder.Services.AddScoped<TagService>();
+    builder.Services.AddScoped<WebhookService>();
+    builder.Services.AddScoped<AdminIdentityService>();
 
     var connectionString = System.Environment.GetEnvironmentVariable("DATABASE_URL") is { } databaseUrl
         ? DatabaseUrlParser.ToNpgsqlConnectionString(databaseUrl)
@@ -138,5 +170,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-
-public partial class Program { }

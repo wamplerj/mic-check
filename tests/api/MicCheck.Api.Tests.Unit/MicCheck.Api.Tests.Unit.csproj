@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/api/MicCheck.Api/MicCheck.Api.csproj" />
-    <ProjectReference Include="../../../src/infrastructure/MicCheck.Infrastructure/MicCheck.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

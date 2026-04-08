@@ -1,10 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/api/MicCheck.Api/MicCheck.Api.csproj" />
-    <Project Path="src/infrastructure/MicCheck.Infrastructure/MicCheck.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/api/MicCheck.Api.Tests.Unit/MicCheck.Api.Tests.Unit.csproj" />
-    <Project Path="tests/infrastructure/MicCheck.Infrastructure.Tests/MicCheck.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>
