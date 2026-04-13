@@ -4,7 +4,7 @@ using System.Text;
 using MicCheck.Api.Users;
 using Microsoft.IdentityModel.Tokens;
 
-namespace MicCheck.Api.Auth;
+namespace MicCheck.Api.Authorization;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {

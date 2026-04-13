@@ -53,4 +53,35 @@ public class WebhookService(MicCheckDbContext db)
         db.Webhooks.Remove(webhook);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<Webhook>> ListByOrganizationAsync(int organizationId, CancellationToken ct = default)
+    {
+        return await db.Webhooks
+            .Where(w => w.OrganizationId == organizationId && w.Scope == WebhookScope.Organization)
+            .ToListAsync(ct);
+    }
+
+    public async Task<Webhook> CreateForOrganizationAsync(int organizationId, string url, string? secret, bool enabled, CancellationToken ct = default)
+    {
+        var webhook = new Webhook
+        {
+            Url = url,
+            Secret = secret,
+            Scope = WebhookScope.Organization,
+            OrganizationId = organizationId,
+            Enabled = enabled,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        db.Webhooks.Add(webhook);
+        await db.SaveChangesAsync(ct);
+        return webhook;
+    }
+
+    public async Task<IReadOnlyList<WebhookDeliveryLog>> ListDeliveriesAsync(int webhookId, CancellationToken ct = default)
+    {
+        return await db.WebhookDeliveryLogs
+            .Where(d => d.WebhookId == webhookId)
+            .OrderByDescending(d => d.AttemptedAt)
+            .ToListAsync(ct);
+    }
 }

@@ -106,6 +106,20 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(WebhookResponse.From(updated));
     }
 
+    [HttpGet("{apiKey}/webhooks/{id}/deliveries")]
+    public async Task<ActionResult<IReadOnlyList<WebhookDeliveryLogResponse>>> ListWebhookDeliveries(
+        string apiKey, int id, CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var webhook = await webhookService.FindByIdAsync(id, ct);
+        if (webhook is null || webhook.EnvironmentId != environment.Id) return NotFound();
+
+        var logs = await webhookService.ListDeliveriesAsync(id, ct);
+        return Ok(logs.Select(WebhookDeliveryLogResponse.From).ToList());
+    }
+
     [HttpDelete("{apiKey}/webhooks/{id}")]
     public async Task<IActionResult> DeleteWebhook(string apiKey, int id, CancellationToken ct)
     {
@@ -128,7 +142,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
         if (environment is null) return NotFound();
 
-        var logs = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, ct);
+        var (_, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, new Audit.AuditLogFilter(), ct);
         return Ok(logs.Select(Audit.AuditLogResponse.From).ToList());
     }
 

@@ -1,3 +1,3 @@
-namespace MicCheck.Api.Auth;
+namespace MicCheck.Api.Authorization;
 
 public record LogoutRequest(string Token);

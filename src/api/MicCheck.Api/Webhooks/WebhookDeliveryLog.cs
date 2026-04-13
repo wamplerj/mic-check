@@ -10,6 +10,7 @@ public class WebhookDeliveryLog
     public string? ResponseBody { get; set; }
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
+    public int AttemptNumber { get; init; }
     public DateTimeOffset AttemptedAt { get; init; }
     public TimeSpan Duration { get; set; }
 }

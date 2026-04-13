@@ -26,14 +26,15 @@ public class FeatureServiceTests
             .Options;
         _db = new MicCheckDbContext(options);
 
-        var auditService = new Mock<AuditService>(_db, null!);
-        auditService.Setup(a => a.LogAsync(
+        var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
+        var auditService = new Mock<AuditService>(_db, null!, webhookQueue);
+        auditService.Setup(a => a.RecordAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _service = new FeatureService(_db, auditService.Object);
+        _service = new FeatureService(_db, auditService.Object, webhookQueue);
 
         SeedBaseData();
     }

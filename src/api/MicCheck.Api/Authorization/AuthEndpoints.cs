@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace MicCheck.Api.Auth;
+namespace MicCheck.Api.Authorization;
 
 public static class AuthEndpoints
 {

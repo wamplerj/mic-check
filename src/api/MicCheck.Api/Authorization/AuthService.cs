@@ -5,7 +5,7 @@ using MicCheck.Api.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace MicCheck.Api.Auth;
+namespace MicCheck.Api.Authorization;
 
 public class AuthService(
     MicCheckDbContext db,

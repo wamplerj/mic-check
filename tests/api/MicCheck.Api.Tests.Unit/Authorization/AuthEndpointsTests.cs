@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using MicCheck.Api.Auth;
+using MicCheck.Api.Authorization;
 using NUnit.Framework;
 
-namespace MicCheck.Api.Tests.Unit.Auth;
+namespace MicCheck.Api.Tests.Unit.Authorization;
 
 [TestFixture]
 public class AuthEndpointsTests

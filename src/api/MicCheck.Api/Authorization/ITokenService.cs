@@ -1,6 +1,6 @@
 using MicCheck.Api.Users;
 
-namespace MicCheck.Api.Auth;
+namespace MicCheck.Api.Authorization;
 
 public interface ITokenService
 {

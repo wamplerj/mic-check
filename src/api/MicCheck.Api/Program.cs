@@ -4,7 +4,6 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using MicCheck.Api.ApiKeys;
 using MicCheck.Api.Audit;
-using MicCheck.Api.Auth;
 using MicCheck.Api.Authentication;
 using MicCheck.Api.Authorization;
 using MicCheck.Api.Data;
@@ -130,7 +129,13 @@ try
     builder.Services.AddScoped<SegmentService>();
     builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<WebhookService>();
+    builder.Services.AddScoped<WebhookDispatcher>();
     builder.Services.AddScoped<AdminIdentityService>();
+    builder.Services.AddSingleton<WebhookQueue>();
+    builder.Services.AddHostedService<WebhookBackgroundService>();
+    builder.Services.AddHostedService<WebhookRetryBackgroundService>();
+    builder.Services.AddHttpClient("Webhooks", client =>
+        client.DefaultRequestHeaders.Add("User-Agent", "MicCheck-Webhook/1.0"));
 
     var connectionString = System.Environment.GetEnvironmentVariable("DATABASE_URL") is { } databaseUrl
         ? DatabaseUrlParser.ToNpgsqlConnectionString(databaseUrl)
@@ -145,6 +150,7 @@ try
     {
         app.MapOpenApi();
         app.MapScalarApiReference();
+        app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 
         using var scope = app.Services.CreateScope();
         var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();

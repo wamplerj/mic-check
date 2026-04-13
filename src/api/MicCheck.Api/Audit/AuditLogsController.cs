@@ -1,4 +1,6 @@
 using MicCheck.Api.Authorization;
+using MicCheck.Api.Common;
+using MicCheck.Api.Environments;
 using MicCheck.Api.Projects;
 using MicCheck.Api.Organizations;
 using Microsoft.AspNetCore.Authorization;
@@ -13,25 +15,45 @@ namespace MicCheck.Api.Audit;
 public class AuditLogsController(
     AuditLogQueryService auditLogQueryService,
     OrganizationService organizationService,
-    ProjectService projectService) : ControllerBase
+    ProjectService projectService,
+    EnvironmentService environmentService) : ControllerBase
 {
     [HttpGet("api/v1/organisations/{id}/audit-logs")]
-    public async Task<ActionResult<IReadOnlyList<AuditLogResponse>>> ListByOrganization(int id, CancellationToken ct)
+    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByOrganization(
+        int id,
+        [FromQuery] AuditLogFilter filter,
+        CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
         if (org is null) return NotFound();
 
-        var logs = await auditLogQueryService.ListByOrganizationAsync(id, ct);
-        return Ok(logs.Select(AuditLogResponse.From).ToList());
+        var (total, logs) = await auditLogQueryService.ListByOrganizationAsync(id, filter, ct);
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
     }
 
     [HttpGet("api/v1/projects/{projectId}/audit-logs")]
-    public async Task<ActionResult<IReadOnlyList<AuditLogResponse>>> ListByProject(int projectId, CancellationToken ct)
+    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByProject(
+        int projectId,
+        [FromQuery] AuditLogFilter filter,
+        CancellationToken ct)
     {
         var project = await projectService.FindByIdAsync(projectId, ct);
         if (project is null) return NotFound();
 
-        var logs = await auditLogQueryService.ListByProjectAsync(projectId, ct);
-        return Ok(logs.Select(AuditLogResponse.From).ToList());
+        var (total, logs) = await auditLogQueryService.ListByProjectAsync(projectId, filter, ct);
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+    }
+
+    [HttpGet("api/v1/environments/{apiKey}/audit-logs")]
+    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByEnvironment(
+        string apiKey,
+        [FromQuery] AuditLogFilter filter,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var (total, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, filter, ct);
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
     }
 }

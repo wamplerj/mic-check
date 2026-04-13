@@ -1,11 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
-using MicCheck.Api.Auth;
+using MicCheck.Api.Authorization;
 using MicCheck.Api.Organizations;
 using MicCheck.Api.Users;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 
-namespace MicCheck.Api.Tests.Unit.Auth;
+namespace MicCheck.Api.Tests.Unit.Authorization;
 
 [TestFixture]
 public class TokenServiceTests

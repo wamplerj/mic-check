@@ -1,11 +1,12 @@
 using MicCheck.Api.Audit;
 using MicCheck.Api.Common;
 using MicCheck.Api.Data;
+using MicCheck.Api.Webhooks;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class FeatureService(MicCheckDbContext db, AuditService auditService)
+public class FeatureService(MicCheckDbContext db, AuditService auditService, WebhookQueue webhookQueue)
 {
     private const int MaxFeaturesPerProject = 400;
 
@@ -67,8 +68,11 @@ public class FeatureService(MicCheckDbContext db, AuditService auditService)
 
         var project = await db.Projects.FirstOrDefaultAsync(p => p.Id == projectId, ct);
         if (project is not null)
-            await auditService.LogAsync("Feature", feature.Id.ToString(), "created",
-                project.OrganizationId, projectId, ct: ct);
+            await auditService.RecordAsync(
+                "Feature", feature.Id.ToString(), "created",
+                project.OrganizationId, projectId,
+                after: new { feature.Name, Type = feature.Type.ToString(), feature.InitialValue, feature.Description },
+                ct: ct);
 
         return feature;
     }
@@ -79,14 +83,20 @@ public class FeatureService(MicCheckDbContext db, AuditService auditService)
         var feature = await db.Features.FirstOrDefaultAsync(f => f.Id == id, ct)
             ?? throw new KeyNotFoundException($"Feature {id} not found.");
 
+        var before = new { feature.Name, feature.Description };
+
         feature.Name = name;
         feature.Description = description;
         await db.SaveChangesAsync(ct);
 
         var project = await db.Projects.FirstOrDefaultAsync(p => p.Id == feature.ProjectId, ct);
         if (project is not null)
-            await auditService.LogAsync("Feature", feature.Id.ToString(), "updated",
-                project.OrganizationId, feature.ProjectId, ct: ct);
+            await auditService.RecordAsync(
+                "Feature", feature.Id.ToString(), "updated",
+                project.OrganizationId, feature.ProjectId,
+                before: before,
+                after: new { feature.Name, feature.Description },
+                ct: ct);
 
         return feature;
     }
@@ -96,7 +106,33 @@ public class FeatureService(MicCheckDbContext db, AuditService auditService)
         var feature = await db.Features.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (feature is null) return;
 
+        var project = await db.Projects.FirstOrDefaultAsync(p => p.Id == feature.ProjectId, ct);
+
         db.Features.Remove(feature);
         await db.SaveChangesAsync(ct);
+
+        if (project is not null)
+        {
+            await auditService.RecordAsync(
+                "Feature", id.ToString(), "deleted",
+                project.OrganizationId, feature.ProjectId,
+                before: new { feature.Name, Type = feature.Type.ToString() },
+                ct: ct);
+
+            var environments = await db.Environments.Where(e => e.ProjectId == feature.ProjectId).ToListAsync(ct);
+            foreach (var env in environments)
+            {
+                await webhookQueue.EnqueueAsync(new WebhookEvent
+                {
+                    EventType = WebhookEventTypes.FlagDeleted,
+                    EnvironmentId = env.Id,
+                    OrganizationId = project.OrganizationId,
+                    Data = new FlagDeletedData(
+                        null,
+                        DateTimeOffset.UtcNow,
+                        new FeatureSummary(feature.Id, feature.Name))
+                });
+            }
+        }
     }
 }

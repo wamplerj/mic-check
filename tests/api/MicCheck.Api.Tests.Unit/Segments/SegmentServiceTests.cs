@@ -24,7 +24,8 @@ public class SegmentServiceTests
             .Options;
         _db = new MicCheckDbContext(options);
 
-        var auditService = new Mock<AuditService>(_db, null!);
+        var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
+        var auditService = new Mock<AuditService>(_db, null!, webhookQueue);
         auditService.Setup(a => a.LogAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),

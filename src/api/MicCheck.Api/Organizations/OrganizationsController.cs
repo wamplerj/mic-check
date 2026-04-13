@@ -1,5 +1,6 @@
 using MicCheck.Api.Authorization;
 using MicCheck.Api.Common;
+using MicCheck.Api.Webhooks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,7 +11,7 @@ namespace MicCheck.Api.Organizations;
 [Route("api/v1/organisations")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
-public class OrganizationsController(OrganizationService organizationService) : ControllerBase
+public class OrganizationsController(OrganizationService organizationService, WebhookService webhookService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<OrganizationResponse>>> List(
@@ -95,6 +96,54 @@ public class OrganizationsController(OrganizationService organizationService) : 
         if (org is null) return NotFound();
 
         await organizationService.RemoveMemberAsync(id, userId, ct);
+        return NoContent();
+    }
+
+    [HttpGet("{id}/webhooks")]
+    public async Task<ActionResult<IReadOnlyList<WebhookResponse>>> ListWebhooks(int id, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var webhooks = await webhookService.ListByOrganizationAsync(id, ct);
+        return Ok(webhooks.Select(WebhookResponse.From).ToList());
+    }
+
+    [HttpPost("{id}/webhooks")]
+    public async Task<ActionResult<WebhookResponse>> CreateWebhook(
+        int id, CreateWebhookRequest request, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var webhook = await webhookService.CreateForOrganizationAsync(id, request.Url, request.Secret, request.Enabled, ct);
+        return CreatedAtAction(nameof(ListWebhooks), new { id }, WebhookResponse.From(webhook));
+    }
+
+    [HttpPut("{id}/webhooks/{webhookId}")]
+    public async Task<ActionResult<WebhookResponse>> UpdateWebhook(
+        int id, int webhookId, CreateWebhookRequest request, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var webhook = await webhookService.FindByIdAsync(webhookId, ct);
+        if (webhook is null || webhook.OrganizationId != id) return NotFound();
+
+        var updated = await webhookService.UpdateAsync(webhookId, request.Url, request.Secret, request.Enabled, ct);
+        return Ok(WebhookResponse.From(updated));
+    }
+
+    [HttpDelete("{id}/webhooks/{webhookId}")]
+    public async Task<IActionResult> DeleteWebhook(int id, int webhookId, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var webhook = await webhookService.FindByIdAsync(webhookId, ct);
+        if (webhook is null || webhook.OrganizationId != id) return NotFound();
+
+        await webhookService.DeleteAsync(webhookId, ct);
         return NoContent();
     }
 
