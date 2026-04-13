@@ -146,6 +146,13 @@ try
 
     var app = builder.Build();
 
+    // Apply any pending EF Core migrations on startup (safe to run on every boot)
+    using (var migrationScope = app.Services.CreateScope())
+    {
+        var db = migrationScope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();

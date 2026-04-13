@@ -8,7 +8,8 @@ MicCheck is an open source project written in asp.net, c#, typescript and VueJS 
 
 ## Planned Structure
 
-- `src/admin/` — administrative components
+- `src/admin/` — administrative components in VueJS
+- `src/api/` - api and restful endpoints in .NET
 - `tests/` — test suite
 - `docs/` — documentation
 
@@ -22,15 +23,18 @@ MicCheck is an open source project written in asp.net, c#, typescript and VueJS 
 
 # Coding
 - Use descriptive names for all classes and method created.  Avoid generic names like Provider, Manager, Helper
+- Coding should match formating and style rules in the .editorconfig file
 
 ## Testing
 - Write unit tests in a BDD style, testing as much code end-to-end as possible without without touching external resources like databases or file systems (e.g. WhenAUserDoesSomething_ThenAThingAppears)
 - Mock any external dependencies using Moq.
-- Do not name any mocked objects with the work Mock in them
+- Do not name any mocked objects with the word Mock in them
 - Do not include any Arrange / Act / Assert comments in the code
 
 
 ## Claude
+- Create all plans as .md file located in the `docs/` folder.  Admin in `docs/admin/` and API in `docs/api/`
+- Divide up large plans into discrete chucks of functionality so each can be built and committed independently.
 - When generating a plan from a .md file in /docs/ save the plan in the same folder with the same filename minus the .md extention, but with a _plan.md at the end
 - When implementing a plan from a .md file in /docs/ save the summary of the plan in the same folder with the same filename minus the .md extention, but with a _output.md at the end
 

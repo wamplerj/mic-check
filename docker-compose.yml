@@ -1,6 +1,8 @@
 services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: miccheck
       POSTGRES_USER: miccheck
@@ -10,11 +12,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U miccheck"]
+      test: ["CMD-SHELL", "pg_isready -U miccheck -d miccheck"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
+  # ── .NET API ─────────────────────────────────────────────────────────────────
   api:
     build:
       context: .
@@ -22,14 +25,32 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Database=miccheck;Username=miccheck;Password=password
-      - Jwt__SecretKey=change-this-secret-key-in-production-must-be-32-chars
-      - Jwt__Issuer=MicCheck
-      - Jwt__Audience=MicCheck
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=db;Database=miccheck;Username=miccheck;Password=password"
+      Jwt__SecretKey: "miccheck-dev-secret-key-change-in-production!!"
+      Jwt__Issuer: MicCheck
+      Jwt__Audience: MicCheck
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/v1/health 2>/dev/null || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Vue Admin Site (nginx) ───────────────────────────────────────────────────
+  admin:
+    build:
+      context: src/admin
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_started
 
 volumes:
   postgres_data:

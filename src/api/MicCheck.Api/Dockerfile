@@ -5,7 +5,6 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["src/api/MicCheck.Api/MicCheck.Api.csproj", "src/api/MicCheck.Api/"]
-COPY ["src/infrastructure/MicCheck.Infrastructure/MicCheck.Infrastructure.csproj", "src/infrastructure/MicCheck.Infrastructure/"]
 RUN dotnet restore "src/api/MicCheck.Api/MicCheck.Api.csproj"
 COPY . .
 RUN dotnet build "src/api/MicCheck.Api/MicCheck.Api.csproj" -c Release -o /app/build

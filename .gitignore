@@ -429,3 +429,43 @@ FodyWeavers.xsd
 
 # JetBrains IDEs
 .idea/
+
+# ── Node.js / Vue.js / TypeScript ────────────────────────────────────────────
+
+# Webpack / Vite build output
+dist/
+dist-ssr/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Jest test coverage reports
+coverage/
+.nyc_output/
+
+# Local environment variable overrides (may contain secrets)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Package manager debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Optional: Yarn v2+ cache (not committed by default)
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# macOS metadata
+.DS_Store
+
+# Windows thumbnail cache
+Thumbs.db
+ehthumbs.db
