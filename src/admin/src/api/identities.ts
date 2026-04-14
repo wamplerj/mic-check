@@ -1,0 +1,63 @@
+import apiClient from './client';
+import type {
+  IdentityResponse,
+  FeatureStateResponse,
+  UpdateFeatureStateRequest,
+  PaginatedResponse,
+} from '@/types/api';
+
+export async function listIdentities(
+  envApiKey: string,
+  page = 1,
+  pageSize = 100,
+): Promise<PaginatedResponse<IdentityResponse>> {
+  const { data } = await apiClient.get<PaginatedResponse<IdentityResponse>>(
+    `/v1/environments/${envApiKey}/identities`,
+    { params: { page, pageSize } },
+  );
+  return data;
+}
+
+export async function getIdentity(envApiKey: string, id: number): Promise<IdentityResponse> {
+  const { data } = await apiClient.get<IdentityResponse>(
+    `/v1/environments/${envApiKey}/identities/${id}`,
+  );
+  return data;
+}
+
+export async function deleteIdentity(envApiKey: string, id: number): Promise<void> {
+  await apiClient.delete(`/v1/environments/${envApiKey}/identities/${id}`);
+}
+
+export async function getIdentityFeatureStates(
+  envApiKey: string,
+  identityId: number,
+): Promise<FeatureStateResponse[]> {
+  const { data } = await apiClient.get<FeatureStateResponse[]>(
+    `/v1/environments/${envApiKey}/identities/${identityId}/featurestates`,
+  );
+  return data;
+}
+
+export async function setIdentityFeatureState(
+  envApiKey: string,
+  identityId: number,
+  featureId: number,
+  request: UpdateFeatureStateRequest,
+): Promise<FeatureStateResponse> {
+  const { data } = await apiClient.put<FeatureStateResponse>(
+    `/v1/environments/${envApiKey}/identities/${identityId}/featurestates/${featureId}`,
+    request,
+  );
+  return data;
+}
+
+export async function deleteIdentityFeatureState(
+  envApiKey: string,
+  identityId: number,
+  featureId: number,
+): Promise<void> {
+  await apiClient.delete(
+    `/v1/environments/${envApiKey}/identities/${identityId}/featurestates/${featureId}`,
+  );
+}
