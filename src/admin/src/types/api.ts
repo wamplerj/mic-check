@@ -300,8 +300,8 @@ export interface AuditLogResponse {
 export interface AuditLogFilter {
   resourceType?: string | null;
   action?: string | null;
-  startDate?: string | null;
-  endDate?: string | null;
+  from?: string | null;
+  to?: string | null;
   page?: number;
   pageSize?: number;
 }
@@ -336,10 +336,15 @@ export interface UpdateWebhookRequest {
 
 export interface WebhookDeliveryLogResponse {
   id: number;
-  status: WebhookDeliveryStatus;
+  webhookId: number;
+  eventType: string;
+  success: boolean;
+  responseStatusCode: number | null;
+  responseBody: string | null;
+  errorMessage: string | null;
   attemptNumber: number;
-  responseCode: number | null;
-  createdAt: string;
+  attemptedAt: string;
+  duration: string;
 }
 
 // ─── Identities ───────────────────────────────────────────────────────────────
