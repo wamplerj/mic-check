@@ -149,7 +149,7 @@ public class OrganizationsController(OrganizationService organizationService, We
 
     private int? GetCurrentUserId()
     {
-        var claim = User.FindFirst("UserId")?.Value;
+        var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(claim, out var id) ? id : null;
     }
 }

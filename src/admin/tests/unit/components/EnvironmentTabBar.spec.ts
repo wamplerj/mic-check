@@ -15,6 +15,8 @@ jest.mock('@/api/client', () => ({
 
 import * as envApi from '@/api/environments';
 
+const dialogStub = { template: '<div><slot /></div>' };
+
 const mockProject: ProjectResponse = {
   id: 10,
   name: 'Website',
@@ -33,7 +35,10 @@ function mountComponent() {
     routes: [{ path: '/', component: { template: '<div />' } }],
   });
   return mount(EnvironmentTabBar, {
-    global: { plugins: [router] },
+    global: {
+      plugins: [router],
+      stubs: { 'v-dialog': dialogStub },
+    },
   });
 }
 
@@ -56,6 +61,13 @@ describe('EnvironmentTabBar', () => {
       await flushPromises();
 
       expect(wrapper.find('[data-testid="env-no-project-message"]').exists()).toBe(true);
+    });
+
+    it('ThenCreateEnvironmentButtonIsDisabled', async () => {
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="create-env-btn"]').attributes('disabled')).toBeDefined();
     });
   });
 
@@ -96,6 +108,18 @@ describe('EnvironmentTabBar', () => {
 
       expect(contextStore.currentEnvironment).toEqual(mockEnvironments[0]);
     });
+
+    it('ThenCreateEnvironmentButtonIsEnabled', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue(mockEnvironments);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="create-env-btn"]').attributes('disabled')).toBeUndefined();
+    });
   });
 
   describe('WhenEnvironmentChipIsClicked', () => {
@@ -108,7 +132,6 @@ describe('EnvironmentTabBar', () => {
       contextStore.setProject(mockProject);
       await flushPromises();
 
-      // Simulate chip-group selecting index 1 (Production)
       await wrapper.findComponent({ name: 'VChipGroup' }).vm.$emit('update:modelValue', 1);
 
       expect(contextStore.currentEnvironment).toEqual(mockEnvironments[1]);
@@ -145,6 +168,151 @@ describe('EnvironmentTabBar', () => {
       await flushPromises();
 
       expect(wrapper.find('[data-testid="env-empty-message"]').exists()).toBe(true);
+    });
+  });
+
+  describe('WhenCreateEnvironmentButtonIsClicked', () => {
+    it('ThenCreateDialogIsShown', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+
+      expect(wrapper.find('[data-testid="create-env-dialog"]').exists()).toBe(true);
+    });
+
+    it('ThenNameInputIsPresentInDialog', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+
+      expect(wrapper.find('[data-testid="env-name-input"]').exists()).toBe(true);
+    });
+  });
+
+  describe('WhenCreateEnvironmentIsConfirmed', () => {
+    const newEnv: EnvironmentResponse = {
+      id: 200, name: 'Staging', apiKey: 'env-key-staging', projectId: 10, createdAt: '2026-04-14T00:00:00Z',
+    };
+
+    it('ThenCreateEnvironmentApiIsCalled', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+      jest.mocked(envApi.createEnvironment).mockResolvedValue(newEnv);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+      (wrapper.vm as any).newEnvName = 'Staging';
+      await (wrapper.vm as any).onCreateConfirm();
+      await flushPromises();
+
+      expect(envApi.createEnvironment).toHaveBeenCalledWith({ name: 'Staging', projectId: mockProject.id });
+    });
+
+    it('ThenNewEnvironmentIsAutoSelectedInContextStore', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+      jest.mocked(envApi.createEnvironment).mockResolvedValue(newEnv);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+      (wrapper.vm as any).newEnvName = 'Staging';
+      await (wrapper.vm as any).onCreateConfirm();
+      await flushPromises();
+
+      expect(contextStore.currentEnvironment).toEqual(newEnv);
+    });
+
+    it('ThenDialogIsClosedAfterSuccessfulCreate', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+      jest.mocked(envApi.createEnvironment).mockResolvedValue(newEnv);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+      (wrapper.vm as any).newEnvName = 'Staging';
+      await (wrapper.vm as any).onCreateConfirm();
+      await flushPromises();
+
+      expect((wrapper.vm as any).showDialog).toBe(false);
+    });
+  });
+
+  describe('WhenCreateEnvironmentFails', () => {
+    it('ThenErrorMessageIsDisplayed', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+      jest.mocked(envApi.createEnvironment).mockRejectedValue(new Error('Server error'));
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+      (wrapper.vm as any).newEnvName = 'Bad Env';
+      await (wrapper.vm as any).onCreateConfirm();
+      await flushPromises();
+
+      expect((wrapper.vm as any).createError).toBeTruthy();
+    });
+
+    it('ThenDialogRemainsOpen', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+      jest.mocked(envApi.createEnvironment).mockRejectedValue(new Error('Server error'));
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+      (wrapper.vm as any).newEnvName = 'Bad Env';
+      await (wrapper.vm as any).onCreateConfirm();
+      await flushPromises();
+
+      expect((wrapper.vm as any).showDialog).toBe(true);
+    });
+  });
+
+  describe('WhenCancelIsClicked', () => {
+    it('ThenDialogIsClosed', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountComponent();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="create-env-btn"]').trigger('click');
+      await wrapper.find('[data-testid="create-env-cancel-btn"]').trigger('click');
+
+      expect((wrapper.vm as any).showDialog).toBe(false);
     });
   });
 });

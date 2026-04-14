@@ -3,11 +3,15 @@ import type {
   SegmentResponse,
   CreateSegmentRequest,
   UpdateSegmentRequest,
+  PaginatedResponse,
 } from '@/types/api';
 
-export async function listSegments(projectId: number): Promise<SegmentResponse[]> {
-  const { data } = await apiClient.get<SegmentResponse[]>(`/v1/projects/${projectId}/segments`);
-  return data;
+export async function listSegments(projectId: number, page = 1, pageSize = 100): Promise<SegmentResponse[]> {
+  const { data } = await apiClient.get<PaginatedResponse<SegmentResponse>>(
+    `/v1/projects/${projectId}/segments`,
+    { params: { page, pageSize } },
+  );
+  return data.results;
 }
 
 export async function getSegment(projectId: number, id: number): Promise<SegmentResponse> {

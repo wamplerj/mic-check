@@ -33,8 +33,8 @@
         v-for="(condition, ci) in rule.conditions"
         :key="ci"
         :condition="condition"
-        @update:condition="onUpdateCondition(ci, $event)"
-        @remove="onRemoveCondition(ci)"
+        @update:condition="onUpdateCondition(Number(ci), $event)"
+        @remove="onRemoveCondition(Number(ci))"
       />
     </div>
 
@@ -45,8 +45,8 @@
         :key="ri"
         :rule="child"
         :removable="true"
-        @update:rule="onUpdateChildRule(ri, $event)"
-        @remove="onRemoveChildRule(ri)"
+        @update:rule="onUpdateChildRule(Number(ri), $event)"
+        @remove="onRemoveChildRule(Number(ri))"
       />
     </div>
 
@@ -103,7 +103,7 @@ function onUpdateCondition(index: number, condition: SegmentCondition): void {
 }
 
 function onRemoveCondition(index: number): void {
-  const conditions = props.rule.conditions.filter((_, i) => i !== index);
+  const conditions = props.rule.conditions.filter((_: SegmentCondition, i: number) => i !== index);
   emit('update:rule', { ...props.rule, conditions });
 }
 
@@ -125,7 +125,7 @@ function onUpdateChildRule(index: number, child: SegmentRule): void {
 }
 
 function onRemoveChildRule(index: number): void {
-  const childRules = (props.rule.childRules ?? []).filter((_, i) => i !== index);
+  const childRules = (props.rule.childRules ?? []).filter((_: SegmentRule, i: number) => i !== index);
   emit('update:rule', { ...props.rule, childRules });
 }
 </script>

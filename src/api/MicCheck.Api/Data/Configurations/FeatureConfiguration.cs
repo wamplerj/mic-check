@@ -22,8 +22,7 @@ public class FeatureConfiguration : IEntityTypeConfiguration<Feature>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(f => f.Tags)
-            .WithOne()
-            .HasForeignKey(t => t.ProjectId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .WithMany()
+            .UsingEntity("FeatureTags");
     }
 }

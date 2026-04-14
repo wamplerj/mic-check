@@ -114,7 +114,7 @@ public class AuditService(MicCheckDbContext db, IHttpContextAccessor httpContext
 
     private int? ResolveActorUserId()
     {
-        var claim = httpContextAccessor.HttpContext?.User.FindFirst("UserId")?.Value;
+        var claim = httpContextAccessor.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(claim, out var id) ? id : null;
     }
 }
