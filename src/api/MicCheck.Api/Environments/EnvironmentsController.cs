@@ -163,6 +163,24 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(new PaginatedResponse<Identities.AdminIdentityResponse>(total, null, null, results));
     }
 
+    [HttpPost("{apiKey}/identities")]
+    public async Task<ActionResult<Identities.AdminIdentityResponse>> CreateIdentity(
+        string apiKey,
+        [FromBody] Identities.CreateIdentityRequest request,
+        [FromServices] Identities.AdminIdentityService adminIdentityService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var identity = await adminIdentityService.CreateAsync(environment.Id, request.Identifier, ct);
+        if (identity is null)
+            return Conflict(new { error = "An identity with this identifier already exists in the environment." });
+
+        return CreatedAtAction(nameof(GetIdentity), new { apiKey, id = identity.Id },
+            Identities.AdminIdentityResponse.From(identity));
+    }
+
     [HttpGet("{apiKey}/identities/{id}")]
     public async Task<ActionResult<Identities.AdminIdentityResponse>> GetIdentity(
         string apiKey, int id,
@@ -190,6 +208,35 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         if (identity is null) return NotFound();
 
         await adminIdentityService.DeleteAsync(id, ct);
+        return NoContent();
+    }
+
+    [HttpPut("{apiKey}/identities/{id}/traits/{key}")]
+    public async Task<ActionResult<Identities.TraitResponse>> UpsertIdentityTrait(
+        string apiKey, int id, string key,
+        [FromBody] Identities.UpsertTraitRequest request,
+        [FromServices] Identities.AdminIdentityService adminIdentityService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var result = await adminIdentityService.UpsertTraitAsync(id, environment.Id, key, request.Value, ct);
+        if (result is null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpDelete("{apiKey}/identities/{id}/traits/{key}")]
+    public async Task<IActionResult> DeleteIdentityTrait(
+        string apiKey, int id, string key,
+        [FromServices] Identities.AdminIdentityService adminIdentityService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var deleted = await adminIdentityService.DeleteTraitAsync(id, environment.Id, key, ct);
+        if (!deleted) return NotFound();
         return NoContent();
     }
 
@@ -301,5 +348,96 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
 
         var updated = await featureStateService.PatchAsync(id, request.Enabled, request.Value, ct);
         return Ok(Features.FeatureStateResponse.From(updated));
+    }
+
+    // ─── Feature Segments ────────────────────────────────────────────────────
+
+    [HttpGet("{apiKey}/features/{featureId}/segments")]
+    public async Task<ActionResult<IReadOnlyList<Features.FeatureSegmentResponse>>> ListFeatureSegments(
+        string apiKey, int featureId,
+        [FromServices] Features.FeatureSegmentService featureSegmentService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var results = await featureSegmentService.ListByFeatureAsync(featureId, environment.Id, ct);
+        return Ok(results);
+    }
+
+    [HttpPost("{apiKey}/features/{featureId}/segments")]
+    public async Task<ActionResult<Features.FeatureSegmentResponse>> CreateFeatureSegment(
+        string apiKey, int featureId,
+        Features.CreateFeatureSegmentRequest request,
+        [FromServices] Features.FeatureSegmentService featureSegmentService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        try
+        {
+            var result = await featureSegmentService.CreateAsync(
+                featureId, environment.Id, request.SegmentId, request.Priority,
+                request.Enabled, request.Value, ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{apiKey}/features/{featureId}/segments/{id}")]
+    public async Task<ActionResult<Features.FeatureSegmentResponse>> UpdateFeatureSegment(
+        string apiKey, int featureId, int id,
+        Features.UpdateFeatureSegmentRequest request,
+        [FromServices] Features.FeatureSegmentService featureSegmentService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var result = await featureSegmentService.UpdateAsync(id, request.Priority, request.Enabled, request.Value, ct);
+        if (result is null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpDelete("{apiKey}/features/{featureId}/segments/{id}")]
+    public async Task<IActionResult> DeleteFeatureSegment(
+        string apiKey, int featureId, int id,
+        [FromServices] Features.FeatureSegmentService featureSegmentService,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var deleted = await featureSegmentService.DeleteAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    // ─── Identity Segments ───────────────────────────────────────────────────
+
+    [HttpGet("{apiKey}/identities/{id}/segments")]
+    public async Task<ActionResult<IReadOnlyList<Segments.SegmentSummaryResponse>>> GetIdentitySegments(
+        string apiKey, int id,
+        [FromServices] Identities.AdminIdentityService adminIdentityService,
+        [FromServices] Segments.SegmentService segmentService,
+        [FromServices] Segments.SegmentEvaluator segmentEvaluator,
+        CancellationToken ct)
+    {
+        var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
+        if (environment is null) return NotFound();
+
+        var identity = await adminIdentityService.FindByIdAsync(id, environment.Id, ct);
+        if (identity is null) return NotFound();
+
+        var segments = await segmentService.ListByProjectAsync(environment.ProjectId, ct);
+        var matching = segments
+            .Where(s => segmentEvaluator.Evaluate(s, identity.Traits.ToList(), identity.Identifier))
+            .Select(s => new Segments.SegmentSummaryResponse(s.Id, s.Name))
+            .ToList();
+
+        return Ok(matching);
     }
 }

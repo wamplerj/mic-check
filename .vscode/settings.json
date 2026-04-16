@@ -3,13 +3,13 @@
         {
             "ssh": "Disabled",
             "previewLimit": 50,
-            "server": "mic-check-db-1",
+            "server": "localhost",
             "port": 5432,
             "askForPassword": true,
             "driver": "PostgreSQL",
             "name": "MicCheck - local",
-            "database": "micheck",
-            "username": "micheck"
+            "database": "miccheck",
+            "username": "miccheck"
         }
     ]
 }

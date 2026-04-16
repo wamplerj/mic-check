@@ -12,9 +12,18 @@ public record OrganizationResponse(
 
 public record OrganizationMemberResponse(
     int UserId,
-    string Role
+    string FirstName,
+    string LastName,
+    string Email,
+    string Role,
+    DateTimeOffset? LastLoginAt
 )
 {
     public static OrganizationMemberResponse From(OrganizationUser member) => new(
-        member.UserId, member.Role.ToString());
+        member.UserId,
+        member.User.FirstName,
+        member.User.LastName,
+        member.User.Email,
+        member.Role.ToString(),
+        member.User.LastLoginAt);
 }

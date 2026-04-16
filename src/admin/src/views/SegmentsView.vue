@@ -51,21 +51,23 @@
 
           <!-- Actions -->
           <template #item.actions="{ item }: { item: SegmentResponse }">
-            <v-btn
-              icon="mdi-pencil-outline"
-              size="small"
-              variant="text"
-              :data-testid="`edit-segment-${item.id}`"
-              @click="openEditDialog(item)"
-            />
-            <v-btn
-              icon="mdi-trash-can-outline"
-              size="small"
-              variant="text"
-              color="error"
-              :data-testid="`delete-segment-${item.id}`"
-              @click="openDeleteConfirm(item)"
-            />
+            <div class="d-flex align-center">
+              <v-btn
+                icon="mdi-pencil-outline"
+                size="small"
+                variant="text"
+                :data-testid="`edit-segment-${item.id}`"
+                @click="openEditDialog(item)"
+              />
+              <v-btn
+                icon="mdi-trash-can-outline"
+                size="small"
+                variant="text"
+                color="error"
+                :data-testid="`delete-segment-${item.id}`"
+                @click="openDeleteConfirm(item)"
+              />
+            </div>
           </template>
 
           <!-- Empty state -->

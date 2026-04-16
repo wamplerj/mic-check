@@ -104,7 +104,7 @@ describe('SettingsView', () => {
   describe('WhenInviteMemberIsClicked', () => {
     it('ThenInviteOrganizationMemberIsCalledWithUserId', async () => {
       jest.mocked(orgsApi.inviteOrganizationMember).mockResolvedValue(undefined);
-      jest.mocked(orgsApi.listOrganizationMembers).mockResolvedValue([{ userId: 42, role: 'User' }]);
+      jest.mocked(orgsApi.listOrganizationMembers).mockResolvedValue([{ userId: 42, firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com', role: 'User', lastLoginAt: null }]);
 
       const contextStore = useContextStore();
       contextStore.setOrganization(mockOrg);
@@ -124,7 +124,7 @@ describe('SettingsView', () => {
 
   describe('WhenRemoveMemberIsClicked', () => {
     it('ThenRemoveOrganizationMemberIsCalledAndMemberIsRemovedFromList', async () => {
-      jest.mocked(orgsApi.listOrganizationMembers).mockResolvedValue([{ userId: 5, role: 'User' }]);
+      jest.mocked(orgsApi.listOrganizationMembers).mockResolvedValue([{ userId: 5, firstName: 'John', lastName: 'Smith', email: 'john@example.com', role: 'User', lastLoginAt: null }]);
       jest.mocked(orgsApi.removeOrganizationMember).mockResolvedValue(undefined);
 
       const contextStore = useContextStore();

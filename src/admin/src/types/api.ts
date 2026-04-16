@@ -54,7 +54,11 @@ export interface UpdateOrganizationRequest {
 
 export interface OrganizationMemberResponse {
   userId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
   role: 'Admin' | 'User';
+  lastLoginAt: string | null;
 }
 
 export interface InviteUserRequest {
@@ -268,6 +272,35 @@ export interface UpdateSegmentRequest {
   rules: SegmentRule[];
 }
 
+export interface SegmentSummaryResponse {
+  id: number;
+  name: string;
+}
+
+export interface FeatureSegmentResponse {
+  id: number;
+  featureId: number;
+  segmentId: number;
+  segmentName: string;
+  environmentId: number;
+  priority: number;
+  enabled: boolean | null;
+  value: string | null;
+}
+
+export interface CreateFeatureSegmentRequest {
+  segmentId: number;
+  priority: number;
+  enabled: boolean;
+  value: string | null;
+}
+
+export interface UpdateFeatureSegmentRequest {
+  priority: number;
+  enabled: boolean;
+  value: string | null;
+}
+
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
 export interface TagResponse {
@@ -351,7 +384,11 @@ export interface WebhookDeliveryLogResponse {
 
 export interface TraitResponse {
   key: string;
-  value: string | number | boolean | null;
+  value: string;
+}
+
+export interface UpsertTraitRequest {
+  value: string;
 }
 
 export interface IdentityResponse {
@@ -360,6 +397,10 @@ export interface IdentityResponse {
   environmentId: number;
   traits: TraitResponse[];
   createdAt: string;
+}
+
+export interface CreateIdentityRequest {
+  identifier: string;
 }
 
 export interface TraitRequest {

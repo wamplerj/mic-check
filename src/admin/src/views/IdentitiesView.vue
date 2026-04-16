@@ -2,6 +2,15 @@
   <div>
     <div class="d-flex align-center justify-space-between mb-4">
       <h1 class="text-h5 font-weight-bold">Identities</h1>
+      <v-btn
+        v-if="contextStore.currentEnvironment"
+        color="primary"
+        prepend-icon="mdi-plus"
+        data-testid="create-identity-btn"
+        @click="showCreateDialog = true"
+      >
+        Create Identity
+      </v-btn>
     </div>
 
     <!-- No environment selected -->
@@ -58,7 +67,7 @@
           <!-- Row actions -->
           <template #item.actions="{ item }: { item: IdentityResponse }">
             <v-btn
-              icon="mdi-eye-outline"
+              icon="mdi-pencil-outline"
               size="small"
               variant="text"
               :data-testid="`view-identity-${item.id}`"
@@ -84,6 +93,50 @@
       @deleted="onIdentityDeleted"
     />
 
+    <!-- Create identity dialog -->
+    <v-dialog v-model="showCreateDialog" max-width="440" @after-leave="onCreateDialogClosed">
+      <v-card rounded="lg">
+        <v-card-title class="pa-6 pb-3">Create Identity</v-card-title>
+        <v-card-text class="pa-6 pt-0">
+          <v-alert
+            v-if="createError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            closable
+            class="mb-4"
+            @click:close="createError = null"
+          >
+            {{ createError }}
+          </v-alert>
+          <v-text-field
+            v-model="newIdentifier"
+            label="Identifier"
+            variant="outlined"
+            density="comfortable"
+            autofocus
+            hide-details="auto"
+            placeholder="e.g. user-123 or alice@example.com"
+            data-testid="create-identity-identifier-input"
+            @keydown.enter="onCreateConfirm"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-6 pt-0 d-flex justify-end ga-2">
+          <v-btn variant="text" @click="showCreateDialog = false">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :disabled="!newIdentifier.trim()"
+            :loading="isCreating"
+            data-testid="create-identity-confirm-btn"
+            @click="onCreateConfirm"
+          >
+            Create
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Error snackbar -->
     <v-snackbar
       v-model="showErrorSnackbar"
@@ -101,7 +154,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { listIdentities } from '@/api/identities';
+import { listIdentities, createIdentity } from '@/api/identities';
 import { useContextStore } from '@/stores/context';
 import IdentityDetail from '@/components/identities/IdentityDetail.vue';
 import type { IdentityResponse } from '@/types/api';
@@ -116,6 +169,11 @@ const snackbarMessage = ref('');
 
 const showDetail = ref(false);
 const selectedIdentity = ref<IdentityResponse | null>(null);
+
+const showCreateDialog = ref(false);
+const newIdentifier = ref('');
+const isCreating = ref(false);
+const createError = ref<string | null>(null);
 
 const headers = [
   { title: 'Identifier', key: 'identifier', sortable: true },
@@ -162,6 +220,30 @@ function openDetail(identity: IdentityResponse): void {
 
 function onRowClick(_event: Event, { item }: { item: IdentityResponse }): void {
   openDetail(item);
+}
+
+async function onCreateConfirm(): Promise<void> {
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey || !newIdentifier.value.trim()) return;
+  isCreating.value = true;
+  createError.value = null;
+  try {
+    const created = await createIdentity(envApiKey, { identifier: newIdentifier.value.trim() });
+    identities.value.unshift(created);
+    showCreateDialog.value = false;
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    createError.value = status === 409
+      ? 'An identity with this identifier already exists in this environment.'
+      : 'Failed to create identity. Please try again.';
+  } finally {
+    isCreating.value = false;
+  }
+}
+
+function onCreateDialogClosed(): void {
+  newIdentifier.value = '';
+  createError.value = null;
 }
 
 function onIdentityDeleted(identityId: number): void {

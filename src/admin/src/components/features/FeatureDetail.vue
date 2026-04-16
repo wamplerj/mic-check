@@ -23,6 +23,7 @@
 
       <v-tabs v-model="activeTab" color="primary" class="px-4">
         <v-tab value="value" data-testid="tab-value">Value</v-tab>
+        <v-tab value="segments" data-testid="tab-segments">Segments</v-tab>
         <v-tab value="settings" data-testid="tab-settings">Settings</v-tab>
       </v-tabs>
       <v-divider />
@@ -94,6 +95,135 @@
 
               <!-- Tags -->
               <TagsChipInput />
+            </template>
+          </v-tabs-window-item>
+
+          <!-- ── Segments tab ─────────────────────────────────────────── -->
+          <v-tabs-window-item value="segments" class="pa-6">
+            <v-alert
+              v-if="segmentsErrorMessage"
+              type="error"
+              variant="tonal"
+              density="compact"
+              closable
+              class="mb-4"
+              @click:close="segmentsErrorMessage = null"
+            >
+              {{ segmentsErrorMessage }}
+            </v-alert>
+
+            <div v-if="!featureState" class="text-center py-6 text-medium-emphasis">
+              <v-icon size="32" class="mb-2">mdi-server-outline</v-icon>
+              <p>Select an environment to manage segment overrides.</p>
+            </div>
+
+            <template v-else>
+              <!-- Existing segment overrides -->
+              <div v-if="featureSegments.length > 0" class="d-flex flex-column ga-3 mb-4">
+                <v-card
+                  v-for="fsg in featureSegments"
+                  :key="fsg.id"
+                  variant="outlined"
+                  rounded="lg"
+                  :data-testid="`feature-segment-${fsg.id}`"
+                >
+                  <v-card-text class="pa-3">
+                    <div class="d-flex align-center justify-space-between">
+                      <div class="d-flex align-center ga-2">
+                        <v-icon size="18" color="primary">mdi-account-group-outline</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ fsg.segmentName }}</span>
+                        <v-chip size="x-small" variant="tonal" color="secondary">
+                          Priority {{ fsg.priority }}
+                        </v-chip>
+                      </div>
+                      <div class="d-flex align-center ga-1">
+                        <v-switch
+                          :model-value="fsg.enabled ?? false"
+                          color="primary"
+                          hide-details
+                          density="compact"
+                          :data-testid="`segment-enabled-toggle-${fsg.id}`"
+                          @update:model-value="onUpdateSegmentEnabled(fsg, $event)"
+                        />
+                        <v-btn
+                          icon="mdi-trash-can-outline"
+                          size="x-small"
+                          variant="text"
+                          color="error"
+                          :data-testid="`remove-segment-${fsg.id}`"
+                          @click="onRemoveSegment(fsg.id)"
+                        />
+                      </div>
+                    </div>
+                    <div v-if="fsg.value !== null" class="mt-2">
+                      <v-text-field
+                        :model-value="fsg.value"
+                        label="Value"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mt-1"
+                        :data-testid="`segment-value-${fsg.id}`"
+                        @update:model-value="onUpdateSegmentValue(fsg, $event)"
+                      />
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+
+              <p v-else class="text-body-2 text-medium-emphasis mb-4">
+                No segment overrides configured for this environment.
+              </p>
+
+              <!-- Add segment form -->
+              <v-card variant="outlined" rounded="lg" class="pa-4" data-testid="add-segment-form">
+                <p class="text-body-2 font-weight-medium mb-3">Add segment override</p>
+                <v-select
+                  v-model="newSegmentId"
+                  :items="availableSegments"
+                  item-title="name"
+                  item-value="id"
+                  label="Segment"
+                  variant="outlined"
+                  density="compact"
+                  class="mb-3"
+                  no-data-text="All segments already configured"
+                  data-testid="new-segment-select"
+                />
+                <div class="d-flex align-center ga-3 mb-3">
+                  <v-switch
+                    v-model="newSegmentEnabled"
+                    color="primary"
+                    label="Enabled"
+                    hide-details
+                    density="compact"
+                    data-testid="new-segment-enabled"
+                  />
+                  <v-text-field
+                    v-model="newSegmentPriority"
+                    label="Priority"
+                    type="number"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    style="max-width: 100px"
+                    data-testid="new-segment-priority"
+                  />
+                </div>
+                <div class="d-flex justify-end">
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    size="small"
+                    :disabled="!newSegmentId"
+                    :loading="isAddingSegment"
+                    data-testid="add-segment-btn"
+                    @click="onAddSegment"
+                  >
+                    Add override
+                  </v-btn>
+                </div>
+              </v-card>
             </template>
           </v-tabs-window-item>
 
@@ -198,13 +328,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { patchFeature, deleteFeature } from '@/api/features';
 import { patchFeatureState } from '@/api/featureStates';
+import { listFeatureSegments, createFeatureSegment, updateFeatureSegment, deleteFeatureSegment } from '@/api/featureSegments';
+import { listSegments } from '@/api/segments';
 import { useContextStore } from '@/stores/context';
 import FeatureValueEditor from './FeatureValueEditor.vue';
 import TagsChipInput from './TagsChipInput.vue';
-import type { FeatureResponse, FeatureStateResponse } from '@/types/api';
+import type { FeatureResponse, FeatureStateResponse, FeatureSegmentResponse, SegmentResponse } from '@/types/api';
 
 interface Props {
   modelValue: boolean;
@@ -233,6 +365,97 @@ const editedValue = ref<string | null>(null);
 const settingsFormRef = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null);
 const valueErrorMessage = ref<string | null>(null);
 const settingsErrorMessage = ref<string | null>(null);
+const segmentsErrorMessage = ref<string | null>(null);
+
+// Segments tab state
+const featureSegments = ref<FeatureSegmentResponse[]>([]);
+const allProjectSegments = ref<SegmentResponse[]>([]);
+const newSegmentId = ref<number | null>(null);
+const newSegmentEnabled = ref(true);
+const newSegmentPriority = ref(1);
+const isAddingSegment = ref(false);
+
+const availableSegments = computed(() =>
+  allProjectSegments.value.filter(
+    (s) => !featureSegments.value.some((fsg) => fsg.segmentId === s.id),
+  ),
+);
+
+async function loadSegmentsData(): Promise<void> {
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  const projectId = contextStore.currentProject?.id;
+  if (!envApiKey || !props.feature || !projectId) return;
+  try {
+    const [fsegs, segs] = await Promise.all([
+      listFeatureSegments(envApiKey, props.feature.id),
+      listSegments(projectId),
+    ]);
+    featureSegments.value = fsegs;
+    allProjectSegments.value = segs;
+  } catch {
+    segmentsErrorMessage.value = 'Failed to load segment overrides.';
+  }
+}
+
+async function onAddSegment(): Promise<void> {
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey || !props.feature || !newSegmentId.value) return;
+  isAddingSegment.value = true;
+  segmentsErrorMessage.value = null;
+  try {
+    const created = await createFeatureSegment(envApiKey, props.feature.id, {
+      segmentId: newSegmentId.value,
+      priority: newSegmentPriority.value,
+      enabled: newSegmentEnabled.value,
+      value: null,
+    });
+    featureSegments.value = [...featureSegments.value, created];
+    newSegmentId.value = null;
+    newSegmentEnabled.value = true;
+    newSegmentPriority.value = featureSegments.value.length;
+  } catch {
+    segmentsErrorMessage.value = 'Failed to add segment override.';
+  } finally {
+    isAddingSegment.value = false;
+  }
+}
+
+function onUpdateSegmentEnabled(fsg: FeatureSegmentResponse, v: boolean | null): void {
+  onUpdateSegment(fsg, { enabled: !!v });
+}
+
+function onUpdateSegmentValue(fsg: FeatureSegmentResponse, val: string): void {
+  onUpdateSegment(fsg, { value: val || null });
+}
+
+async function onUpdateSegment(
+  fsg: FeatureSegmentResponse,
+  patch: { enabled?: boolean; value?: string | null },
+): Promise<void> {
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey || !props.feature) return;
+  try {
+    const updated = await updateFeatureSegment(envApiKey, props.feature.id, fsg.id, {
+      priority: fsg.priority,
+      enabled: patch.enabled ?? fsg.enabled ?? false,
+      value: patch.value !== undefined ? patch.value : fsg.value,
+    });
+    featureSegments.value = featureSegments.value.map((f) => (f.id === fsg.id ? updated : f));
+  } catch {
+    segmentsErrorMessage.value = 'Failed to update segment override.';
+  }
+}
+
+async function onRemoveSegment(id: number): Promise<void> {
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey || !props.feature) return;
+  try {
+    await deleteFeatureSegment(envApiKey, props.feature.id, id);
+    featureSegments.value = featureSegments.value.filter((f) => f.id !== id);
+  } catch {
+    segmentsErrorMessage.value = 'Failed to remove segment override.';
+  }
+}
 
 const settingsForm = ref({
   name: '',
@@ -263,7 +486,7 @@ watch(() => props.feature, syncSettingsForm, { immediate: true });
 // Sync edited value when feature state changes
 watch(
   () => props.featureState,
-  (s) => {
+  (s: FeatureStateResponse | null) => {
     editedValue.value = s?.value ?? null;
   },
   { immediate: true },
@@ -277,8 +500,14 @@ watch(
       activeTab.value = 'value';
       valueErrorMessage.value = null;
       settingsErrorMessage.value = null;
+      segmentsErrorMessage.value = null;
+      featureSegments.value = [];
+      newSegmentId.value = null;
+      newSegmentEnabled.value = true;
+      newSegmentPriority.value = 1;
       syncSettingsForm(props.feature);
       editedValue.value = props.featureState?.value ?? null;
+      loadSegmentsData();
     }
   },
 );

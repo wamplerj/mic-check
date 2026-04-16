@@ -64,6 +64,7 @@ public class OrganizationService(MicCheckDbContext db, AuditService auditService
     {
         return await db.OrganizationUsers
             .Where(m => m.OrganizationId == organizationId)
+            .Include(m => m.User)
             .ToListAsync(ct);
     }
 

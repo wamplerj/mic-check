@@ -126,6 +126,7 @@ try
     builder.Services.AddScoped<EnvironmentService>();
     builder.Services.AddScoped<FeatureService>();
     builder.Services.AddScoped<FeatureStateService>();
+    builder.Services.AddScoped<FeatureSegmentService>();
     builder.Services.AddScoped<SegmentService>();
     builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<WebhookService>();

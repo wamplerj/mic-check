@@ -18,6 +18,7 @@
       <v-tabs v-model="activeTab" color="primary" class="px-4">
         <v-tab value="traits" data-testid="tab-traits">Traits</v-tab>
         <v-tab value="overrides" data-testid="tab-overrides">Feature Overrides</v-tab>
+        <v-tab value="segments" data-testid="tab-segments">Segments</v-tab>
       </v-tabs>
       <v-divider />
 
@@ -37,25 +38,81 @@
               {{ traitsError }}
             </v-alert>
 
-            <div v-if="identity.traits.length === 0" class="text-center py-6 text-medium-emphasis">
-              <v-icon size="32" class="mb-2">mdi-tag-outline</v-icon>
-              <p class="text-body-2">No traits recorded for this identity.</p>
+            <div v-if="editedTraits.length === 0" class="text-center py-4 text-medium-emphasis text-body-2 mb-4" data-testid="no-traits-message">
+              No traits recorded for this identity.
             </div>
 
-            <v-table v-else density="compact" data-testid="traits-table">
+            <v-table v-else density="compact" class="mb-4" data-testid="traits-table">
               <thead>
                 <tr>
-                  <th>Key</th>
+                  <th style="width: 40%">Key</th>
                   <th>Value</th>
+                  <th style="width: 40px"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="trait in identity.traits" :key="trait.key" :data-testid="`trait-row-${trait.key}`">
+                <tr v-for="(trait, i) in editedTraits" :key="trait.key" :data-testid="`trait-row-${trait.key}`">
                   <td class="text-body-2 font-weight-medium">{{ trait.key }}</td>
-                  <td class="text-body-2">{{ trait.value }}</td>
+                  <td>
+                    <v-text-field
+                      v-model="editedTraits[Number(i)].value"
+                      variant="underlined"
+                      density="compact"
+                      hide-details
+                      :loading="savingTraitKey === trait.key"
+                      :data-testid="`trait-value-${trait.key}`"
+                      @blur="onSaveTrait(trait.key, editedTraits[Number(i)].value)"
+                    />
+                  </td>
+                  <td>
+                    <v-btn
+                      icon="mdi-trash-can-outline"
+                      size="x-small"
+                      variant="text"
+                      color="error"
+                      :loading="deletingTraitKey === trait.key"
+                      :data-testid="`delete-trait-${trait.key}`"
+                      @click="onDeleteTrait(trait.key)"
+                    />
+                  </td>
                 </tr>
               </tbody>
             </v-table>
+
+            <!-- Add trait form -->
+            <v-divider class="mb-4" />
+            <p class="text-body-2 font-weight-medium mb-3">Add Trait</p>
+            <div class="d-flex align-center ga-3 flex-wrap">
+              <v-text-field
+                v-model="newTraitKey"
+                label="Key"
+                variant="outlined"
+                density="compact"
+                hide-details
+                style="min-width: 140px; flex: 1"
+                data-testid="new-trait-key-input"
+              />
+              <v-text-field
+                v-model="newTraitValue"
+                label="Value"
+                variant="outlined"
+                density="compact"
+                hide-details
+                style="min-width: 140px; flex: 1"
+                data-testid="new-trait-value-input"
+              />
+              <v-btn
+                color="primary"
+                variant="flat"
+                size="small"
+                :disabled="!newTraitKey.trim()"
+                :loading="isAddingTrait"
+                data-testid="add-trait-btn"
+                @click="onAddTrait"
+              >
+                Add
+              </v-btn>
+            </div>
 
             <!-- Danger zone -->
             <v-card variant="outlined" color="error" rounded="lg" class="mt-6">
@@ -197,6 +254,48 @@
               </div>
             </template>
           </v-tabs-window-item>
+          <!-- ── Segments tab ─────────────────────────────────────────── -->
+          <v-tabs-window-item value="segments" class="pa-6">
+            <v-alert
+              v-if="segmentsError"
+              type="error"
+              variant="tonal"
+              density="compact"
+              closable
+              class="mb-4"
+              @click:close="segmentsError = null"
+            >
+              {{ segmentsError }}
+            </v-alert>
+
+            <div v-if="isLoadingSegments" class="d-flex justify-center py-6">
+              <v-progress-circular indeterminate color="primary" />
+            </div>
+
+            <template v-else>
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Segments this identity belongs to are determined automatically by evaluating its traits against each segment's rules.
+              </p>
+
+              <div v-if="identitySegments.length === 0" class="text-center py-6 text-medium-emphasis" data-testid="no-segments-message">
+                <v-icon size="32" class="mb-2">mdi-label-off-outline</v-icon>
+                <p class="text-body-2">This identity does not match any segments.</p>
+              </div>
+
+              <div v-else class="d-flex flex-wrap ga-2" data-testid="segments-list">
+                <v-chip
+                  v-for="segment in identitySegments"
+                  :key="segment.id"
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                  :data-testid="`segment-chip-${segment.id}`"
+                >
+                  {{ segment.name }}
+                </v-chip>
+              </div>
+            </template>
+          </v-tabs-window-item>
         </v-tabs-window>
       </v-card-text>
     </v-card>
@@ -205,10 +304,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { getIdentityFeatureStates, setIdentityFeatureState, deleteIdentity, deleteIdentityFeatureState } from '@/api/identities';
+import { getIdentityFeatureStates, setIdentityFeatureState, deleteIdentity, deleteIdentityFeatureState, upsertIdentityTrait, deleteIdentityTrait } from '@/api/identities';
 import { listFeatures } from '@/api/features';
+import { listIdentitySegments } from '@/api/featureSegments';
 import { useContextStore } from '@/stores/context';
-import type { IdentityResponse, FeatureResponse, FeatureStateResponse } from '@/types/api';
+import type { IdentityResponse, FeatureResponse, FeatureStateResponse, SegmentSummaryResponse, TraitResponse } from '@/types/api';
 
 interface Props {
   modelValue: boolean;
@@ -228,6 +328,14 @@ const activeTab = ref('traits');
 const isDeleting = ref(false);
 const traitsError = ref<string | null>(null);
 
+// Local editable copy of traits
+const editedTraits = ref<TraitResponse[]>([]);
+const savingTraitKey = ref<string | null>(null);
+const deletingTraitKey = ref<string | null>(null);
+const newTraitKey = ref('');
+const newTraitValue = ref('');
+const isAddingTrait = ref(false);
+
 const overrides = ref<FeatureStateResponse[]>([]);
 const allFeatures = ref<FeatureResponse[]>([]);
 const isLoadingOverrides = ref(false);
@@ -238,6 +346,10 @@ const newOverrideFeatureId = ref<number | null>(null);
 const newOverrideEnabled = ref(false);
 const newOverrideValue = ref('');
 
+const identitySegments = ref<SegmentSummaryResponse[]>([]);
+const isLoadingSegments = ref(false);
+const segmentsError = ref<string | null>(null);
+
 // Map featureId → name for display in overrides table
 const featureNameMap = computed(() => new Map(allFeatures.value.map((f) => [f.id, f.name])));
 
@@ -246,6 +358,22 @@ const availableFeatures = computed(() => {
   const overriddenIds = new Set(overrides.value.map((o) => o.featureId));
   return allFeatures.value.filter((f) => !overriddenIds.has(f.id));
 });
+
+async function loadSegmentsData(): Promise<void> {
+  if (!props.identity) return;
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey) return;
+
+  isLoadingSegments.value = true;
+  segmentsError.value = null;
+  try {
+    identitySegments.value = await listIdentitySegments(envApiKey, props.identity.id);
+  } catch {
+    segmentsError.value = 'Failed to load segments. Please try again.';
+  } finally {
+    isLoadingSegments.value = false;
+  }
+}
 
 async function loadOverridesData(): Promise<void> {
   if (!props.identity) return;
@@ -276,11 +404,17 @@ watch(
       activeTab.value = 'traits';
       traitsError.value = null;
       overridesError.value = null;
+      segmentsError.value = null;
       overrides.value = [];
+      identitySegments.value = [];
       newOverrideFeatureId.value = null;
       newOverrideEnabled.value = false;
       newOverrideValue.value = '';
+      newTraitKey.value = '';
+      newTraitValue.value = '';
+      editedTraits.value = props.identity ? props.identity.traits.map((t: TraitResponse) => ({ ...t })) : [];
       loadOverridesData();
+      loadSegmentsData();
     }
   },
   { immediate: true },
@@ -352,6 +486,64 @@ async function onAddOverride(): Promise<void> {
     overridesError.value = 'Failed to add override. Please try again.';
   } finally {
     isAddingOverride.value = false;
+  }
+}
+
+async function onSaveTrait(key: string, value: string): Promise<void> {
+  if (!props.identity) return;
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey) return;
+  savingTraitKey.value = key;
+  traitsError.value = null;
+  try {
+    await upsertIdentityTrait(envApiKey, props.identity.id, key, { value });
+    const idx = editedTraits.value.findIndex((t: TraitResponse) => t.key === key);
+    if (idx >= 0) editedTraits.value[idx] = { key, value };
+  } catch {
+    traitsError.value = 'Failed to save trait. Please try again.';
+  } finally {
+    savingTraitKey.value = null;
+  }
+}
+
+async function onDeleteTrait(key: string): Promise<void> {
+  if (!props.identity) return;
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey) return;
+  deletingTraitKey.value = key;
+  traitsError.value = null;
+  try {
+    await deleteIdentityTrait(envApiKey, props.identity.id, key);
+    editedTraits.value = editedTraits.value.filter((t: TraitResponse) => t.key !== key);
+  } catch {
+    traitsError.value = 'Failed to delete trait. Please try again.';
+  } finally {
+    deletingTraitKey.value = null;
+  }
+}
+
+async function onAddTrait(): Promise<void> {
+  const key = newTraitKey.value.trim();
+  const value = newTraitValue.value;
+  if (!key || !props.identity) return;
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey) return;
+  isAddingTrait.value = true;
+  traitsError.value = null;
+  try {
+    await upsertIdentityTrait(envApiKey, props.identity.id, key, { value });
+    const existing = editedTraits.value.findIndex((t: TraitResponse) => t.key === key);
+    if (existing >= 0) {
+      editedTraits.value[existing] = { key, value };
+    } else {
+      editedTraits.value = [...editedTraits.value, { key, value }];
+    }
+    newTraitKey.value = '';
+    newTraitValue.value = '';
+  } catch {
+    traitsError.value = 'Failed to add trait. Please try again.';
+  } finally {
+    isAddingTrait.value = false;
   }
 }
 

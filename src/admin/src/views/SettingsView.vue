@@ -57,11 +57,23 @@
             <v-card-title class="text-body-1 font-weight-medium pa-4 pb-2">Members</v-card-title>
             <v-card-text class="pa-4 pt-0">
               <v-table v-if="orgMembers.length > 0" density="compact" class="mb-3" data-testid="members-table">
-                <thead><tr><th>User ID</th><th>Role</th><th style="width:60px"></th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th style="width:100px">Role</th>
+                    <th style="width:140px">Last Login</th>
+                    <th style="width:60px"></th>
+                  </tr>
+                </thead>
                 <tbody>
                   <tr v-for="member in orgMembers" :key="member.userId" :data-testid="`member-row-${member.userId}`">
-                    <td class="text-body-2">{{ member.userId }}</td>
+                    <td class="text-body-2">{{ member.firstName }}</td>
+                    <td class="text-body-2">{{ member.lastName }}</td>
+                    <td class="text-body-2">{{ member.email }}</td>
                     <td><v-chip size="x-small" :color="member.role === 'Admin' ? 'primary' : 'default'" variant="tonal">{{ member.role }}</v-chip></td>
+                    <td class="text-caption text-medium-emphasis">{{ member.lastLoginAt ? formatDate(member.lastLoginAt) : '—' }}</td>
                     <td>
                       <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
                         :data-testid="`remove-member-${member.userId}`" @click="onRemoveMember(member.userId)" />

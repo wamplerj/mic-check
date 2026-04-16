@@ -49,10 +49,10 @@
       width="240"
     >
       <!-- Logo -->
-      <div class="d-flex align-center pa-4 pb-3" data-testid="sidebar-logo">
+      <router-link to="/dashboard" class="d-flex align-center pa-4 pb-3 text-decoration-none" data-testid="sidebar-logo">
         <img :src="logoUrl" alt="MicCheck" height="32" width="32" class="flex-shrink-0" />
-        <span v-if="!rail" class="text-h6 font-weight-bold ml-3">MicCheck</span>
-      </div>
+        <span v-if="!rail" class="text-h6 font-weight-bold ml-3 text-high-emphasis">MicCheck</span>
+      </router-link>
 
       <v-divider />
 

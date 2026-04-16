@@ -4,10 +4,11 @@ import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import IdentityDetail from '@/components/identities/IdentityDetail.vue';
 import { useContextStore } from '@/stores/context';
-import type { EnvironmentResponse, IdentityResponse, FeatureResponse, FeatureStateResponse, ProjectResponse } from '@/types/api';
+import type { EnvironmentResponse, IdentityResponse, FeatureResponse, FeatureStateResponse, ProjectResponse, SegmentSummaryResponse } from '@/types/api';
 
 jest.mock('@/api/identities');
 jest.mock('@/api/features');
+jest.mock('@/api/featureSegments');
 jest.mock('@/api/client', () => ({
   setAuthTokens: jest.fn(),
   clearAuthTokens: jest.fn(),
@@ -16,6 +17,7 @@ jest.mock('@/api/client', () => ({
 
 import * as identitiesApi from '@/api/identities';
 import * as featuresApi from '@/api/features';
+import * as featureSegmentsApi from '@/api/featureSegments';
 
 const mockProject: ProjectResponse = {
   id: 10, name: 'Website', organizationId: 1, hideDisabledFlags: false, createdAt: '2026-01-01T00:00:00Z',
@@ -38,6 +40,10 @@ const mockOverride: FeatureStateResponse = {
   id: 500, featureId: 10, environmentId: 100, identityId: 1, featureSegmentId: null,
   enabled: true, value: null, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
 };
+const mockSegments: SegmentSummaryResponse[] = [
+  { id: 1, name: 'Pro Users' },
+  { id: 2, name: 'US Customers' },
+];
 
 const dialogStub = { template: '<div><slot /></div>' };
 
@@ -60,6 +66,7 @@ describe('IdentityDetail', () => {
 
     jest.mocked(identitiesApi.getIdentityFeatureStates).mockResolvedValue([]);
     jest.mocked(featuresApi.listFeatures).mockResolvedValue({ count: 2, next: null, previous: null, results: mockFeatures });
+    jest.mocked(featureSegmentsApi.listIdentitySegments).mockResolvedValue([]);
   });
 
   describe('WhenOpenedWithIdentity', () => {
@@ -75,11 +82,12 @@ describe('IdentityDetail', () => {
       expect(wrapper.text()).toContain('user-alice');
     });
 
-    it('ThenTraitsAndOverridesTabsArePresent', async () => {
+    it('ThenTraitsOverridesAndSegmentsTabsArePresent', async () => {
       const wrapper = mountDetail();
       await flushPromises();
       expect(wrapper.find('[data-testid="tab-traits"]').exists()).toBe(true);
       expect(wrapper.find('[data-testid="tab-overrides"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="tab-segments"]').exists()).toBe(true);
     });
   });
 
@@ -96,14 +104,129 @@ describe('IdentityDetail', () => {
       expect(wrapper.find('[data-testid="trait-row-plan"]').exists()).toBe(true);
       expect(wrapper.find('[data-testid="trait-row-country"]').exists()).toBe(true);
       expect(wrapper.text()).toContain('plan');
-      expect(wrapper.text()).toContain('pro');
     });
 
-    it('ThenEmptyMessageIsShownWhenNoTraits', async () => {
+    it('ThenNoTraitsMessageIsShownWhenNoTraits', async () => {
       const identityWithNoTraits: IdentityResponse = { ...mockIdentity, traits: [] };
       const wrapper = mountDetail({ identity: identityWithNoTraits });
       await flushPromises();
       expect(wrapper.find('[data-testid="traits-table"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="no-traits-message"]').exists()).toBe(true);
+    });
+
+    it('ThenAddTraitButtonIsPresent', async () => {
+      const wrapper = mountDetail();
+      await flushPromises();
+      expect(wrapper.find('[data-testid="add-trait-btn"]').exists()).toBe(true);
+    });
+
+    it('ThenAddTraitButtonIsDisabledWhenKeyIsEmpty', async () => {
+      const wrapper = mountDetail();
+      await flushPromises();
+      const btn = wrapper.find('[data-testid="add-trait-btn"]');
+      expect(btn.attributes('disabled')).toBeDefined();
+    });
+  });
+
+  describe('WhenAddTraitIsSubmitted', () => {
+    it('ThenUpsertIdentityTraitIsCalledWithKeyAndValue', async () => {
+      jest.mocked(identitiesApi.upsertIdentityTrait).mockResolvedValue({ key: 'role', value: 'admin' });
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      (wrapper.vm as any).newTraitKey = 'role';
+      (wrapper.vm as any).newTraitValue = 'admin';
+      await (wrapper.vm as any).onAddTrait();
+
+      expect(identitiesApi.upsertIdentityTrait).toHaveBeenCalledWith(
+        mockEnv.apiKey, mockIdentity.id, 'role', { value: 'admin' },
+      );
+    });
+
+    it('ThenNewTraitAppearsInTable', async () => {
+      jest.mocked(identitiesApi.upsertIdentityTrait).mockResolvedValue({ key: 'role', value: 'admin' });
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      (wrapper.vm as any).newTraitKey = 'role';
+      (wrapper.vm as any).newTraitValue = 'admin';
+      await (wrapper.vm as any).onAddTrait();
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="trait-row-role"]').exists()).toBe(true);
+    });
+
+    it('ThenInputsAreClearedAfterSuccess', async () => {
+      jest.mocked(identitiesApi.upsertIdentityTrait).mockResolvedValue({ key: 'role', value: 'admin' });
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      (wrapper.vm as any).newTraitKey = 'role';
+      (wrapper.vm as any).newTraitValue = 'admin';
+      await (wrapper.vm as any).onAddTrait();
+
+      expect((wrapper.vm as any).newTraitKey).toBe('');
+      expect((wrapper.vm as any).newTraitValue).toBe('');
+    });
+
+    it('ThenErrorIsShownWhenApiFails', async () => {
+      jest.mocked(identitiesApi.upsertIdentityTrait).mockRejectedValue(new Error('fail'));
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      (wrapper.vm as any).newTraitKey = 'role';
+      await (wrapper.vm as any).onAddTrait();
+
+      expect(wrapper.text()).toContain('Failed to add trait');
+    });
+  });
+
+  describe('WhenTraitValueIsSaved', () => {
+    it('ThenUpsertIdentityTraitIsCalledWithUpdatedValue', async () => {
+      jest.mocked(identitiesApi.upsertIdentityTrait).mockResolvedValue({ key: 'plan', value: 'enterprise' });
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      await (wrapper.vm as any).onSaveTrait('plan', 'enterprise');
+
+      expect(identitiesApi.upsertIdentityTrait).toHaveBeenCalledWith(
+        mockEnv.apiKey, mockIdentity.id, 'plan', { value: 'enterprise' },
+      );
+    });
+  });
+
+  describe('WhenDeleteTraitIsClicked', () => {
+    it('ThenDeleteIdentityTraitIsCalledWithKey', async () => {
+      jest.mocked(identitiesApi.deleteIdentityTrait).mockResolvedValue(undefined);
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="delete-trait-plan"]').trigger('click');
+      await flushPromises();
+
+      expect(identitiesApi.deleteIdentityTrait).toHaveBeenCalledWith(
+        mockEnv.apiKey, mockIdentity.id, 'plan',
+      );
+    });
+
+    it('ThenTraitRowIsRemovedAfterDelete', async () => {
+      jest.mocked(identitiesApi.deleteIdentityTrait).mockResolvedValue(undefined);
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="trait-row-plan"]').exists()).toBe(true);
+
+      await wrapper.find('[data-testid="delete-trait-plan"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="trait-row-plan"]').exists()).toBe(false);
     });
   });
 
@@ -215,6 +338,64 @@ describe('IdentityDetail', () => {
       );
       expect(wrapper.find('[data-testid="overrides-table"]').exists()).toBe(false);
       expect(wrapper.find('[data-testid="no-overrides-message"]').exists()).toBe(true);
+    });
+  });
+
+  describe('WhenSegmentsTabIsActive', () => {
+    it('ThenListIdentitySegmentsIsCalledOnOpen', async () => {
+      mountDetail();
+      await flushPromises();
+      expect(featureSegmentsApi.listIdentitySegments).toHaveBeenCalledWith(mockEnv.apiKey, mockIdentity.id);
+    });
+
+    it('ThenNoSegmentsMessageIsShownWhenIdentityMatchesNone', async () => {
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-segments"]').trigger('click');
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="no-segments-message"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="segments-list"]').exists()).toBe(false);
+    });
+
+    it('ThenSegmentChipsAreDisplayedWhenIdentityMatchesSegments', async () => {
+      jest.mocked(featureSegmentsApi.listIdentitySegments).mockResolvedValue(mockSegments);
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-segments"]').trigger('click');
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="segments-list"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="segment-chip-1"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="segment-chip-2"]').exists()).toBe(true);
+    });
+
+    it('ThenSegmentNamesAreDisplayedInChips', async () => {
+      jest.mocked(featureSegmentsApi.listIdentitySegments).mockResolvedValue(mockSegments);
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-segments"]').trigger('click');
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.text()).toContain('Pro Users');
+      expect(wrapper.text()).toContain('US Customers');
+    });
+
+    it('ThenSegmentsErrorIsShownWhenApiFails', async () => {
+      jest.mocked(featureSegmentsApi.listIdentitySegments).mockRejectedValue(new Error('Network error'));
+
+      const wrapper = mountDetail();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-segments"]').trigger('click');
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.text()).toContain('Failed to load segments');
     });
   });
 

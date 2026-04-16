@@ -1,9 +1,12 @@
 import apiClient from './client';
 import type {
   IdentityResponse,
+  TraitResponse,
   FeatureStateResponse,
   UpdateFeatureStateRequest,
   PaginatedResponse,
+  CreateIdentityRequest,
+  UpsertTraitRequest,
 } from '@/types/api';
 
 export async function listIdentities(
@@ -18,11 +21,45 @@ export async function listIdentities(
   return data;
 }
 
+export async function createIdentity(
+  envApiKey: string,
+  request: CreateIdentityRequest,
+): Promise<IdentityResponse> {
+  const { data } = await apiClient.post<IdentityResponse>(
+    `/v1/environments/${envApiKey}/identities`,
+    request,
+  );
+  return data;
+}
+
 export async function getIdentity(envApiKey: string, id: number): Promise<IdentityResponse> {
   const { data } = await apiClient.get<IdentityResponse>(
     `/v1/environments/${envApiKey}/identities/${id}`,
   );
   return data;
+}
+
+export async function upsertIdentityTrait(
+  envApiKey: string,
+  identityId: number,
+  key: string,
+  request: UpsertTraitRequest,
+): Promise<TraitResponse> {
+  const { data } = await apiClient.put<TraitResponse>(
+    `/v1/environments/${envApiKey}/identities/${identityId}/traits/${encodeURIComponent(key)}`,
+    request,
+  );
+  return data;
+}
+
+export async function deleteIdentityTrait(
+  envApiKey: string,
+  identityId: number,
+  key: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/v1/environments/${envApiKey}/identities/${identityId}/traits/${encodeURIComponent(key)}`,
+  );
 }
 
 export async function deleteIdentity(envApiKey: string, id: number): Promise<void> {

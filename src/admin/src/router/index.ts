@@ -1,83 +1,71 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { getAccessToken } from '@/api/client';
-import AppLayout from '@/components/AppLayout.vue';
-import LoginView from '@/views/LoginView.vue';
-import RegisterView from '@/views/RegisterView.vue';
-import DashboardView from '@/views/DashboardView.vue';
-import FeaturesView from '@/views/FeaturesView.vue';
-import SegmentsView from '@/views/SegmentsView.vue';
-import IdentitiesView from '@/views/IdentitiesView.vue';
-import AuditLogsView from '@/views/AuditLogsView.vue';
-import EnvironmentsView from '@/views/EnvironmentsView.vue';
-import ProjectsView from '@/views/ProjectsView.vue';
-import ProfileView from '@/views/ProfileView.vue';
-import SettingsView from '@/views/SettingsView.vue';
 
 const routes: RouteRecordRaw[] = [
   // ─── Public routes (no layout) ────────────────────────────────────────────
   {
     path: '/login',
     name: 'Login',
-    component: LoginView,
+    component: () => import('@/views/LoginView.vue'),
     meta: { public: true },
   },
   {
     path: '/register',
     name: 'Register',
-    component: RegisterView,
+    component: () => import('@/views/RegisterView.vue'),
     meta: { public: true },
   },
 
   // ─── Authenticated routes (wrapped in AppLayout) ───────────────────────────
   {
     path: '/',
-    component: AppLayout,
+    component: () => import('@/components/AppLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
         name: 'Dashboard',
-        component: DashboardView,
+        component: () => import('@/views/DashboardView.vue'),
       },
       {
         path: 'features',
         name: 'Features',
-        component: FeaturesView,
+        component: () => import('@/views/FeaturesView.vue'),
       },
       {
         path: 'segments',
         name: 'Segments',
-        component: SegmentsView,
+        component: () => import('@/views/SegmentsView.vue'),
       },
       {
         path: 'identities',
         name: 'Identities',
-        component: IdentitiesView,
+        component: () => import('@/views/IdentitiesView.vue'),
       },
       {
         path: 'audit-logs',
         name: 'AuditLogs',
-        component: AuditLogsView,
+        component: () => import('@/views/AuditLogsView.vue'),
       },
       {
         path: 'environments',
         name: 'Environments',
-        component: EnvironmentsView,
+        component: () => import('@/views/EnvironmentsView.vue'),
       },
       {
         path: 'projects',
         name: 'Projects',
-        component: ProjectsView,
+        component: () => import('@/views/ProjectsView.vue'),
       },
       {
         path: 'profile',
         name: 'Profile',
-        component: ProfileView,
+        component: () => import('@/views/ProfileView.vue'),
       },
       {
         path: 'settings',
         name: 'Settings',
-        component: SettingsView,
+        component: () => import('@/views/SettingsView.vue'),
       },
     ],
   },

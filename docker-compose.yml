@@ -24,6 +24,8 @@ services:
       dockerfile: src/api/MicCheck.Api/Dockerfile
     ports:
       - "8080:8080"
+    volumes:
+      - ./src/api/MicCheck.Api/publish:/app
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
@@ -48,6 +50,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:80"
+    volumes:
+      - ./src/admin/dist:/usr/share/nginx/html
     depends_on:
       api:
         condition: service_started

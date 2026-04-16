@@ -89,22 +89,39 @@
             />
           </template>
 
+          <!-- Segment overrides -->
+          <template #item.segments="{ item }: { item: FeatureResponse }">
+            <div v-if="!contextStore.currentEnvironment" class="text-caption text-medium-emphasis">—</div>
+            <template v-else>
+              <div
+                v-if="(featureSegmentsMap.get(item.id) ?? []).length > 0"
+                class="d-flex flex-wrap align-center ga-1 py-1"
+              >
+                <v-chip
+                  v-for="seg in (featureSegmentsMap.get(item.id) ?? []).slice(0, 5)"
+                  :key="seg.id"
+                  size="x-small"
+                  variant="tonal"
+                  color="secondary"
+                  :data-testid="`segment-chip-${item.id}-${seg.id}`"
+                >
+                  {{ seg.segmentName }}
+                </v-chip>
+                <span
+                  v-if="(featureSegmentsMap.get(item.id) ?? []).length > 5"
+                  class="text-caption text-medium-emphasis"
+                  :title="`${(featureSegmentsMap.get(item.id) ?? []).length - 5} more`"
+                >…</span>
+              </div>
+              <span v-else class="text-caption text-medium-emphasis">—</span>
+            </template>
+          </template>
+
           <!-- Created at -->
           <template #item.createdAt="{ item }: { item: FeatureResponse }">
             <span class="text-caption text-medium-emphasis">
               {{ formatDate(item.createdAt) }}
             </span>
-          </template>
-
-          <!-- Row actions -->
-          <template #item.actions="{ item }: { item: FeatureResponse }">
-            <v-btn
-              icon="mdi-pencil-outline"
-              size="small"
-              variant="text"
-              :data-testid="`edit-feature-${item.id}`"
-              @click.stop="openEditDialog(item)"
-            />
           </template>
 
           <!-- Empty state -->
@@ -121,7 +138,6 @@
     <!-- Create / Edit dialog -->
     <FeatureDialog
       v-model="showDialog"
-      :feature="editingFeature"
       @saved="onFeatureSaved"
     />
 
@@ -154,16 +170,18 @@
 import { ref, computed, watch } from 'vue';
 import { listFeatures } from '@/api/features';
 import { listFeatureStates, patchFeatureState } from '@/api/featureStates';
+import { listFeatureSegments } from '@/api/featureSegments';
 import { useContextStore } from '@/stores/context';
 import FeatureDialog from '@/components/features/FeatureDialog.vue';
 import FeatureDetail from '@/components/features/FeatureDetail.vue';
-import type { FeatureResponse, FeatureStateResponse } from '@/types/api';
+import type { FeatureResponse, FeatureStateResponse, FeatureSegmentResponse } from '@/types/api';
 
 const contextStore = useContextStore();
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const features = ref<FeatureResponse[]>([]);
 const featureStateMap = ref<Map<number, FeatureStateResponse>>(new Map());
+const featureSegmentsMap = ref<Map<number, FeatureSegmentResponse[]>>(new Map());
 const isLoading = ref(false);
 const search = ref('');
 const togglingFeatureId = ref<number | null>(null);
@@ -179,7 +197,6 @@ function showError(message: string): void {
 
 // Dialog / detail state
 const showDialog = ref(false);
-const editingFeature = ref<FeatureResponse | null>(null);
 const showDetail = ref(false);
 const selectedFeature = ref<FeatureResponse | null>(null);
 
@@ -192,8 +209,8 @@ const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Type', key: 'type', sortable: true, width: '140' },
   { title: 'Enabled', key: 'enabled', sortable: false, width: '100' },
+  { title: 'Segments', key: 'segments', sortable: false },
   { title: 'Created', key: 'createdAt', sortable: true, width: '130' },
-  { title: '', key: 'actions', sortable: false, width: '50', align: 'end' as const },
 ];
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
@@ -239,22 +256,36 @@ async function loadFeatureStates(): Promise<void> {
   }
 }
 
+async function loadFeatureSegments(): Promise<void> {
+  const envApiKey = contextStore.currentEnvironment?.apiKey;
+  if (!envApiKey || features.value.length === 0) {
+    featureSegmentsMap.value = new Map();
+    return;
+  }
+  const results = await Promise.allSettled(
+    features.value.map((f) => listFeatureSegments(envApiKey, f.id).then((segs) => [f.id, segs] as const)),
+  );
+  const map = new Map<number, FeatureSegmentResponse[]>();
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      const [featureId, segs] = result.value;
+      map.set(featureId, segs);
+    }
+  }
+  featureSegmentsMap.value = map;
+}
+
 async function loadData(): Promise<void> {
-  await Promise.all([loadFeatures(), loadFeatureStates()]);
+  await loadFeatures();
+  await Promise.all([loadFeatureStates(), loadFeatureSegments()]);
 }
 
 // Reload when project or environment changes
 watch(() => contextStore.currentProject, loadData, { immediate: true });
-watch(() => contextStore.currentEnvironment, loadFeatureStates);
+watch(() => contextStore.currentEnvironment, () => Promise.all([loadFeatureStates(), loadFeatureSegments()]));
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 function openCreateDialog(): void {
-  editingFeature.value = null;
-  showDialog.value = true;
-}
-
-function openEditDialog(feature: FeatureResponse): void {
-  editingFeature.value = feature;
   showDialog.value = true;
 }
 
