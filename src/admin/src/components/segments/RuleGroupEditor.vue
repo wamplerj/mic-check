@@ -12,8 +12,8 @@
         data-testid="rule-type-toggle"
         @update:model-value="onTypeChange"
       >
-        <v-btn value="AND" size="small" data-testid="rule-type-and">ALL (AND)</v-btn>
-        <v-btn value="OR" size="small" data-testid="rule-type-or">ANY (OR)</v-btn>
+        <v-btn value="All" size="small" data-testid="rule-type-and">ALL (AND)</v-btn>
+        <v-btn value="Any" size="small" data-testid="rule-type-or">ANY (OR)</v-btn>
       </v-btn-toggle>
       <v-spacer />
       <v-btn
@@ -113,7 +113,7 @@ function onAddCondition(): void {
 }
 
 function onAddChildGroup(): void {
-  const newGroup: SegmentRule = { type: 'AND', conditions: [] };
+  const newGroup: SegmentRule = { type: 'All', conditions: [] };
   const childRules = [...(props.rule.childRules ?? []), newGroup];
   emit('update:rule', { ...props.rule, childRules });
 }

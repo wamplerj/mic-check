@@ -140,7 +140,7 @@ watch(() => props.modelValue, (open) => {
 watch(() => props.segment, resetForm, { immediate: true });
 
 function onAddRuleGroup(): void {
-  form.value.rules = [...form.value.rules, { type: 'AND', conditions: [] }];
+  form.value.rules = [...form.value.rules, { type: 'All', conditions: [] }];
 }
 
 function onUpdateRule(index: number, rule: SegmentRule): void {

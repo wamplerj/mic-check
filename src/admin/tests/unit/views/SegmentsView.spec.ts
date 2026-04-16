@@ -24,7 +24,7 @@ const dialogStub = { template: '<div><slot /></div>' };
 const mockSegments: SegmentResponse[] = [
   {
     id: 1, name: 'beta_users', projectId: 10, createdAt: '2026-01-01T00:00:00Z',
-    rules: [{ type: 'AND', conditions: [{ property: 'plan', operator: 'Equal', value: 'beta' }] }],
+    rules: [{ type: 'All', conditions: [{ property: 'plan', operator: 'Equal', value: 'beta' }] }],
   },
   {
     id: 2, name: 'power_users', projectId: 10, createdAt: '2026-01-01T00:00:00Z',

@@ -54,7 +54,8 @@
                 <div>
                   <p class="text-body-1 font-weight-medium mb-1">Enabled</p>
                   <p class="text-body-2 text-medium-emphasis">
-                    {{ featureState.enabled ? 'On in this environment' : 'Off in this environment' }}
+                    {{ featureState.enabled ? 'On' : 'Off' }} in
+                    <strong>{{ contextStore.currentEnvironment?.name }}</strong>
                   </p>
                 </div>
                 <v-switch

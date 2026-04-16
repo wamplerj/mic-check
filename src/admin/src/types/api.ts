@@ -234,7 +234,7 @@ export type SegmentConditionOperator =
   | 'PercentageSplit'
   | 'ModuloValueDivisorRemainder';
 
-export type SegmentRuleType = 'AND' | 'OR';
+export type SegmentRuleType = 'All' | 'Any';
 
 export interface SegmentCondition {
   id?: number;
