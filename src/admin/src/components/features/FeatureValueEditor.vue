@@ -4,8 +4,6 @@
     <v-btn-toggle
       v-model="detectedMode"
       density="compact"
-      variant="outlined"
-      class="mb-3"
       data-testid="value-mode-toggle"
     >
       <v-btn value="text" size="small">Text</v-btn>
@@ -84,3 +82,12 @@ const rules = {
   },
 };
 </script>
+
+<style scoped>
+/* Materio forces square icon-toggle sizing; override for text-label toggles */
+:deep(.v-btn-toggle .v-btn) {
+  block-size: auto !important;
+  inline-size: auto !important;
+  padding-inline: 16px !important;
+}
+</style>

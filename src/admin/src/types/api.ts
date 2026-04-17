@@ -1,3 +1,25 @@
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+export interface UserProfileResponse {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface LoginRequest {
@@ -327,6 +349,7 @@ export interface AuditLogResponse {
   projectId: number | null;
   environmentId: number | null;
   actorUserId: number | null;
+  actorUserName: string | null;
   createdAt: string;
 }
 

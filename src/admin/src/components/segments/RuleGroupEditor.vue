@@ -18,7 +18,7 @@
       <v-spacer />
       <v-btn
         v-if="removable"
-        icon="mdi-trash-can-outline"
+        icon="ri-delete-bin-line"
         size="x-small"
         variant="text"
         color="error"
@@ -56,7 +56,7 @@
         size="x-small"
         variant="tonal"
         color="primary"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         data-testid="add-condition-btn"
         @click="onAddCondition"
       >
@@ -66,7 +66,7 @@
         size="x-small"
         variant="tonal"
         color="secondary"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         data-testid="add-group-btn"
         @click="onAddChildGroup"
       >

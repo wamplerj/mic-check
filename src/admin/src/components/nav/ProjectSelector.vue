@@ -13,7 +13,7 @@
       :disabled="isLoading || !contextStore.currentOrganization"
       :placeholder="contextStore.currentOrganization ? 'Select a project' : 'Select an organization first'"
       no-data-text="No projects found"
-      prepend-inner-icon="mdi-folder-outline"
+      prepend-inner-icon="ri-folder-line"
       data-testid="project-select"
       @update:model-value="onProjectSelected"
     />
@@ -22,7 +22,7 @@
       size="x-small"
       variant="text"
       color="primary"
-      prepend-icon="mdi-plus"
+      prepend-icon="ri-add-line"
       class="mt-1 px-1"
       :disabled="!contextStore.currentOrganization"
       data-testid="create-project-btn"

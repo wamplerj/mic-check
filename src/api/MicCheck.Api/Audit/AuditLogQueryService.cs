@@ -5,28 +5,28 @@ namespace MicCheck.Api.Audit;
 
 public class AuditLogQueryService(MicCheckDbContext db)
 {
-    public async Task<(int Total, IReadOnlyList<AuditLog> Items)> ListByOrganizationAsync(
+    public async Task<(int Total, IReadOnlyList<AuditLogResponse> Items)> ListByOrganizationAsync(
         int organizationId, AuditLogFilter filter, CancellationToken ct = default)
     {
         var query = db.AuditLogs.Where(l => l.OrganizationId == organizationId);
         return await ApplyFilterAndPageAsync(query, filter, ct);
     }
 
-    public async Task<(int Total, IReadOnlyList<AuditLog> Items)> ListByProjectAsync(
+    public async Task<(int Total, IReadOnlyList<AuditLogResponse> Items)> ListByProjectAsync(
         int projectId, AuditLogFilter filter, CancellationToken ct = default)
     {
         var query = db.AuditLogs.Where(l => l.ProjectId == projectId);
         return await ApplyFilterAndPageAsync(query, filter, ct);
     }
 
-    public async Task<(int Total, IReadOnlyList<AuditLog> Items)> ListByEnvironmentAsync(
+    public async Task<(int Total, IReadOnlyList<AuditLogResponse> Items)> ListByEnvironmentAsync(
         int environmentId, AuditLogFilter filter, CancellationToken ct = default)
     {
         var query = db.AuditLogs.Where(l => l.EnvironmentId == environmentId);
         return await ApplyFilterAndPageAsync(query, filter, ct);
     }
 
-    private static async Task<(int Total, IReadOnlyList<AuditLog> Items)> ApplyFilterAndPageAsync(
+    private async Task<(int Total, IReadOnlyList<AuditLogResponse> Items)> ApplyFilterAndPageAsync(
         IQueryable<AuditLog> query, AuditLogFilter filter, CancellationToken ct)
     {
         if (filter.From.HasValue)
@@ -46,10 +46,21 @@ public class AuditLogQueryService(MicCheckDbContext db)
 
         var total = await query.CountAsync(ct);
         var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+
         var items = await query
             .OrderByDescending(l => l.CreatedAt)
             .Skip((filter.Page - 1) * pageSize)
             .Take(pageSize)
+            .GroupJoin(
+                db.Users,
+                log => log.ActorUserId,
+                user => (int?)user.Id,
+                (log, users) => new { log, users })
+            .SelectMany(
+                x => x.users.DefaultIfEmpty(),
+                (x, user) => AuditLogResponse.From(
+                    x.log,
+                    user != null ? user.FirstName + " " + user.LastName : null))
             .ToListAsync(ct);
 
         return (total, items);

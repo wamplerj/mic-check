@@ -2,28 +2,17 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { getAccessToken } from '@/api/client';
 
 const routes: RouteRecordRaw[] = [
-  // ─── Public routes (no layout) ────────────────────────────────────────────
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/LoginView.vue'),
-    meta: { public: true },
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/RegisterView.vue'),
-    meta: { public: true },
-  },
+  // Root redirect
+  { path: '/', redirect: '/dashboard' },
 
-  // ─── Authenticated routes (wrapped in AppLayout) ───────────────────────────
+  // ─── Authenticated routes (default layout with vertical nav) ──────────────
   {
     path: '/',
-    component: () => import('@/components/AppLayout.vue'),
+    component: () => import('@/layouts/default.vue'),
     meta: { requiresAuth: true },
     children: [
       {
-        path: '',
+        path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/DashboardView.vue'),
       },
@@ -63,6 +52,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/ProfileView.vue'),
       },
       {
+        path: 'users/:id',
+        name: 'UserProfile',
+        component: () => import('@/views/UserView.vue'),
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/SettingsView.vue'),
@@ -70,10 +64,28 @@ const routes: RouteRecordRaw[] = [
     ],
   },
 
-  // ─── Fallback ─────────────────────────────────────────────────────────────
+  // ─── Public routes (blank layout) ─────────────────────────────────────────
   {
-    path: '/:pathMatch(.*)*',
-    redirect: '/',
+    path: '/',
+    component: () => import('@/layouts/blank.vue'),
+    children: [
+      {
+        path: 'login',
+        name: 'Login',
+        component: () => import('@/views/LoginView.vue'),
+        meta: { public: true },
+      },
+      {
+        path: 'register',
+        name: 'Register',
+        component: () => import('@/views/RegisterView.vue'),
+        meta: { public: true },
+      },
+      {
+        path: ':pathMatch(.*)*',
+        redirect: '/dashboard',
+      },
+    ],
   },
 ];
 

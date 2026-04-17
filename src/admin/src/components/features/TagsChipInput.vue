@@ -6,7 +6,7 @@
         size="x-small"
         variant="tonal"
         color="primary"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         :loading="isCreating"
         data-testid="create-tag-btn"
         @click="showCreateForm = !showCreateForm"
@@ -49,7 +49,7 @@
               data-testid="new-tag-color-input"
             />
             <v-btn
-              icon="mdi-check"
+              icon="ri-check-line"
               size="small"
               color="primary"
               variant="flat"
@@ -59,7 +59,7 @@
               @click.prevent="onCreateTag"
             />
             <v-btn
-              icon="mdi-close"
+              icon="ri-close-line"
               size="small"
               variant="text"
               @click="showCreateForm = false"

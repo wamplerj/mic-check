@@ -132,6 +132,7 @@ try
     builder.Services.AddScoped<WebhookService>();
     builder.Services.AddScoped<WebhookDispatcher>();
     builder.Services.AddScoped<AdminIdentityService>();
+    builder.Services.AddScoped<UserService>();
     builder.Services.AddSingleton<WebhookQueue>();
     builder.Services.AddHostedService<WebhookBackgroundService>();
     builder.Services.AddHostedService<WebhookRetryBackgroundService>();

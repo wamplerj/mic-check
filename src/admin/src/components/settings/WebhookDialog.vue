@@ -7,7 +7,7 @@
     <v-card rounded="lg" data-testid="webhook-dialog">
       <v-card-title class="d-flex align-center justify-space-between pa-6 pb-3">
         <span class="text-h6">{{ webhook ? 'Edit Webhook' : 'Add Webhook' }}</span>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('update:modelValue', false)" />
+        <v-btn icon="ri-close-line" variant="text" size="small" @click="$emit('update:modelValue', false)" />
       </v-card-title>
       <v-divider />
 
@@ -42,7 +42,7 @@
             density="comfortable"
             class="mb-3"
             :type="showSecret ? 'text' : 'password'"
-            :append-inner-icon="showSecret ? 'mdi-eye-off' : 'mdi-eye'"
+            :append-inner-icon="showSecret ? 'ri-eye-off-line' : 'ri-eye-line'"
             hint="Used to sign the webhook payload"
             data-testid="webhook-secret-input"
             @click:append-inner="showSecret = !showSecret"

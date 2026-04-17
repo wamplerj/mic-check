@@ -10,11 +10,12 @@
           :variant="contextStore.currentOrganization ? 'tonal' : 'outlined'"
           rounded="lg"
           data-testid="org-card"
+          class="context-card"
         >
           <v-card-item>
             <template #prepend>
               <v-icon :color="contextStore.currentOrganization ? 'primary' : 'medium-emphasis'">
-                mdi-domain
+                ri-building-line
               </v-icon>
             </template>
             <v-card-title class="text-body-2 text-medium-emphasis">Organization</v-card-title>
@@ -31,11 +32,12 @@
           :variant="contextStore.currentProject ? 'tonal' : 'outlined'"
           rounded="lg"
           data-testid="project-card"
+          class="context-card"
         >
           <v-card-item>
             <template #prepend>
               <v-icon :color="contextStore.currentProject ? 'primary' : 'medium-emphasis'">
-                mdi-folder-outline
+                ri-folder-line
               </v-icon>
             </template>
             <v-card-title class="text-body-2 text-medium-emphasis">Project</v-card-title>
@@ -52,11 +54,12 @@
           :variant="contextStore.currentEnvironment ? 'tonal' : 'outlined'"
           rounded="lg"
           data-testid="environment-card"
+          class="context-card"
         >
           <v-card-item>
             <template #prepend>
               <v-icon :color="contextStore.currentEnvironment ? 'primary' : 'medium-emphasis'">
-                mdi-server-outline
+                ri-server-line
               </v-icon>
             </template>
             <v-card-title class="text-body-2 text-medium-emphasis">Environment</v-card-title>
@@ -83,6 +86,7 @@
           rounded="lg"
           hover
           data-testid="section-card"
+          class="section-card"
         >
           <v-card-item>
             <template #prepend>
@@ -98,7 +102,7 @@
     <!-- Empty state when no org selected -->
     <v-card v-else-if="!contextStore.currentOrganization" variant="outlined" rounded="lg">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" color="medium-emphasis" class="mb-4">mdi-domain</v-icon>
+        <v-icon size="48" color="medium-emphasis" class="mb-4">ri-building-line</v-icon>
         <p class="text-h6 mb-2">Get started</p>
         <p class="text-body-2 text-medium-emphasis">
           Select or create an organization using the sidebar to begin managing your feature flags.
@@ -109,7 +113,7 @@
     <!-- Empty state when org selected but no project -->
     <v-card v-else variant="outlined" rounded="lg">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" color="medium-emphasis" class="mb-4">mdi-folder-outline</v-icon>
+        <v-icon size="48" color="medium-emphasis" class="mb-4">ri-folder-line</v-icon>
         <p class="text-h6 mb-2">Select a project</p>
         <p class="text-body-2 text-medium-emphasis">
           Choose a project from the sidebar to start managing feature flags, segments, and identities.
@@ -129,25 +133,35 @@ const sections = [
     label: 'Features',
     description: 'Manage feature flags and their values per environment',
     route: '/features',
-    icon: 'mdi-flag-outline',
+    icon: 'ri-flag-line',
   },
   {
     label: 'Segments',
     description: 'Define user segments to target specific audiences',
     route: '/segments',
-    icon: 'mdi-account-group-outline',
+    icon: 'ri-group-line',
   },
   {
     label: 'Identities',
     description: 'View and override flags for individual users',
     route: '/identities',
-    icon: 'mdi-badge-account-outline',
+    icon: 'ri-profile-line',
   },
   {
     label: 'Audit Logs',
     description: 'Review a full history of changes across the project',
     route: '/audit-logs',
-    icon: 'mdi-history',
+    icon: 'ri-history-line',
   },
 ];
 </script>
+
+<style scoped>
+:deep(.section-card .v-card-item) {
+  align-items: flex-start;
+}
+
+:deep(.context-card .v-card-item) {
+  align-items: flex-start;
+}
+</style>

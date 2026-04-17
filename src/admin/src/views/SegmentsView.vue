@@ -5,7 +5,7 @@
       <v-btn
         v-if="contextStore.currentProject"
         color="primary"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         data-testid="create-segment-btn"
         @click="openCreateDialog"
       >
@@ -16,7 +16,7 @@
     <!-- No project selected -->
     <v-card v-if="!contextStore.currentProject" variant="outlined" rounded="lg">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" color="medium-emphasis" class="mb-3">mdi-account-group-outline</v-icon>
+        <v-icon size="48" color="medium-emphasis" class="mb-3">ri-group-line</v-icon>
         <p class="text-h6 mb-2">Select a project</p>
         <p class="text-body-2 text-medium-emphasis">
           Choose a project from the sidebar to manage its segments.
@@ -53,14 +53,14 @@
           <template #item.actions="{ item }: { item: SegmentResponse }">
             <div class="d-flex align-center">
               <v-btn
-                icon="mdi-pencil-outline"
+                icon="ri-edit-line"
                 size="small"
                 variant="text"
                 :data-testid="`edit-segment-${item.id}`"
                 @click="openEditDialog(item)"
               />
               <v-btn
-                icon="mdi-trash-can-outline"
+                icon="ri-delete-bin-line"
                 size="small"
                 variant="text"
                 color="error"
@@ -73,7 +73,7 @@
           <!-- Empty state -->
           <template #no-data>
             <div class="text-center py-8">
-              <v-icon size="40" color="medium-emphasis" class="mb-2">mdi-account-group-outline</v-icon>
+              <v-icon size="40" color="medium-emphasis" class="mb-2">ri-group-line</v-icon>
               <p class="text-body-2 text-medium-emphasis">No segments yet. Create your first segment.</p>
             </div>
           </template>
@@ -89,34 +89,20 @@
     />
 
     <!-- Delete confirmation dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="400">
+    <v-dialog v-model="showDeleteDialog" max-width="400" persistent>
       <v-card rounded="lg" data-testid="delete-confirm-dialog">
         <v-card-title class="text-body-1 font-weight-bold pa-4 pb-2">Delete Segment</v-card-title>
         <v-card-text class="pa-4 pt-0">
-          <p class="text-body-2 mb-3">
-            Are you sure you want to delete
-            <strong>{{ deletingSegment?.name }}</strong>?
-            This cannot be undone.
+          <p class="text-body-2">
+            Delete <strong>{{ deletingSegment?.name }}</strong>? This cannot be undone.
           </p>
-          <p class="text-body-2 mb-2">
-            Type <strong>{{ deletingSegment?.name }}</strong> to confirm:
-          </p>
-          <v-text-field
-            v-model="deleteConfirmName"
-            variant="outlined"
-            density="compact"
-            hide-details
-            :placeholder="deletingSegment?.name"
-            data-testid="delete-confirm-input"
-          />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
-          <v-btn variant="text" @click="closeDeleteConfirm">Cancel</v-btn>
+          <v-btn variant="text" :disabled="isDeleting" @click="closeDeleteConfirm">Cancel</v-btn>
           <v-btn
             color="error"
             variant="flat"
-            :disabled="deleteConfirmName !== deletingSegment?.name"
             :loading="isDeleting"
             data-testid="confirm-delete-btn"
             @click="onDeleteSegment"
@@ -161,7 +147,6 @@ const editingSegment = ref<SegmentResponse | null>(null);
 
 const showDeleteDialog = ref(false);
 const deletingSegment = ref<SegmentResponse | null>(null);
-const deleteConfirmName = ref('');
 const isDeleting = ref(false);
 
 const headers = [
@@ -207,14 +192,12 @@ function openEditDialog(segment: SegmentResponse): void {
 
 function openDeleteConfirm(segment: SegmentResponse): void {
   deletingSegment.value = segment;
-  deleteConfirmName.value = '';
   showDeleteDialog.value = true;
 }
 
 function closeDeleteConfirm(): void {
   showDeleteDialog.value = false;
   deletingSegment.value = null;
-  deleteConfirmName.value = '';
 }
 
 function onSegmentSaved(saved: SegmentResponse): void {
@@ -227,7 +210,7 @@ function onSegmentSaved(saved: SegmentResponse): void {
 }
 
 async function onDeleteSegment(): Promise<void> {
-  if (!deletingSegment.value || deleteConfirmName.value !== deletingSegment.value.name) return;
+  if (!deletingSegment.value) return;
   const projectId = contextStore.currentProject?.id;
   if (!projectId) return;
 

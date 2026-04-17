@@ -55,7 +55,7 @@
 
     <!-- Remove button -->
     <v-btn
-      icon="mdi-close"
+      icon="ri-close-line"
       size="x-small"
       variant="text"
       color="error"

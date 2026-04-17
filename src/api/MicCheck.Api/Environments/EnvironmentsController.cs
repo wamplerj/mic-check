@@ -143,7 +143,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         if (environment is null) return NotFound();
 
         var (_, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, new Audit.AuditLogFilter(), ct);
-        return Ok(logs.Select(Audit.AuditLogResponse.From).ToList());
+        return Ok(logs.ToList());
     }
 
     [HttpGet("{apiKey}/identities")]

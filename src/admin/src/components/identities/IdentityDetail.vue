@@ -12,7 +12,7 @@
           <p class="text-h6 mb-0">{{ identity.identifier }}</p>
           <p class="text-caption text-medium-emphasis mb-0">ID: {{ identity.id }}</p>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('update:modelValue', false)" />
+        <v-btn icon="ri-close-line" variant="text" size="small" @click="$emit('update:modelValue', false)" />
       </v-card-title>
 
       <v-tabs v-model="activeTab" color="primary" class="px-4">
@@ -66,7 +66,7 @@
                   </td>
                   <td>
                     <v-btn
-                      icon="mdi-trash-can-outline"
+                      icon="ri-delete-bin-line"
                       size="x-small"
                       variant="text"
                       color="error"
@@ -195,7 +195,7 @@
                     </td>
                     <td>
                       <v-btn
-                        icon="mdi-trash-can-outline"
+                        icon="ri-delete-bin-line"
                         size="x-small"
                         variant="text"
                         color="error"
@@ -278,7 +278,7 @@
               </p>
 
               <div v-if="identitySegments.length === 0" class="text-center py-6 text-medium-emphasis" data-testid="no-segments-message">
-                <v-icon size="32" class="mb-2">mdi-label-off-outline</v-icon>
+                <v-icon size="32" class="mb-2">ri-price-tag-3-line</v-icon>
                 <p class="text-body-2">This identity does not match any segments.</p>
               </div>
 

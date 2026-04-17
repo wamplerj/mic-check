@@ -75,8 +75,8 @@
                     <td><v-chip size="x-small" :color="member.role === 'Admin' ? 'primary' : 'default'" variant="tonal">{{ member.role }}</v-chip></td>
                     <td class="text-caption text-medium-emphasis">{{ member.lastLoginAt ? formatDate(member.lastLoginAt) : '—' }}</td>
                     <td>
-                      <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
-                        :data-testid="`remove-member-${member.userId}`" @click="onRemoveMember(member.userId)" />
+                      <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error"
+                        :data-testid="`remove-member-${member.userId}`" @click="openConfirm('member', member.userId, `${member.firstName} ${member.lastName}`)" />
                     </td>
                   </tr>
                 </tbody>
@@ -212,8 +212,8 @@
                       </div>
                     </td>
                     <td>
-                      <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
-                        :data-testid="`remove-permission-${perm.userId}`" @click="onRemovePermission(perm.userId)" />
+                      <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error"
+                        :data-testid="`remove-permission-${perm.userId}`" @click="openConfirm('permission', perm.userId, `User ${perm.userId}`)" />
                     </td>
                   </tr>
                 </tbody>
@@ -225,7 +225,7 @@
                 size="small"
                 color="primary"
                 variant="tonal"
-                prepend-icon="mdi-plus"
+                prepend-icon="ri-add-line"
                 data-testid="add-permission-btn"
                 @click="showAddPermission = !showAddPermission"
               >
@@ -337,9 +337,9 @@
                       <v-chip size="x-small" variant="tonal" color="secondary">{{ env.apiKey }}</v-chip>
                     </div>
                     <div class="d-flex ga-1 mr-2" @click.stop>
-                      <v-btn icon="mdi-content-copy" size="x-small" variant="text" :data-testid="`clone-env-${env.id}`" @click.stop="openCloneDialog(env)" />
-                      <v-btn icon="mdi-pencil-outline" size="x-small" variant="text" :data-testid="`rename-env-${env.id}`" @click.stop="openRenameDialog(env)" />
-                      <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error" :data-testid="`delete-env-${env.id}`" @click.stop="openDeleteEnvConfirm(env)" />
+                      <v-btn icon="ri-file-copy-line" size="x-small" variant="text" :data-testid="`clone-env-${env.id}`" @click.stop="openCloneDialog(env)" />
+                      <v-btn icon="ri-edit-line" size="x-small" variant="text" :data-testid="`rename-env-${env.id}`" @click.stop="openRenameDialog(env)" />
+                      <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error" :data-testid="`delete-env-${env.id}`" @click.stop="openDeleteEnvConfirm(env)" />
                     </div>
                   </v-expansion-panel-title>
                   <v-expansion-panel-text>
@@ -361,7 +361,7 @@
               size="small"
               color="primary"
               variant="tonal"
-              prepend-icon="mdi-plus"
+              prepend-icon="ri-add-line"
               data-testid="create-api-key-btn"
               @click="showApiKeyDialog = true"
             >
@@ -394,8 +394,8 @@
                   </td>
                   <td class="text-caption text-medium-emphasis">{{ key.expiresAt ? formatDate(key.expiresAt) : 'Never' }}</td>
                   <td>
-                    <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
-                      :data-testid="`delete-api-key-${key.id}`" @click="onDeleteApiKey(key.id)" />
+                    <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error"
+                      :data-testid="`delete-api-key-${key.id}`" @click="openConfirm('apiKey', key.id, key.name)" />
                   </td>
                 </tr>
               </tbody>
@@ -404,6 +404,23 @@
         </v-tabs-window-item>
       </v-tabs-window>
     </template>
+
+    <!-- Generic confirmation dialog (member / permission / api key) -->
+    <v-dialog v-model="showConfirmDialog" max-width="400" persistent>
+      <v-card rounded="lg" data-testid="confirm-delete-dialog">
+        <v-card-title class="text-body-1 font-weight-bold pa-4 pb-2">Confirm Delete</v-card-title>
+        <v-card-text class="pa-4 pt-0">
+          <p class="text-body-2">
+            Delete <strong>{{ confirmLabel }}</strong>? This cannot be undone.
+          </p>
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn variant="text" :disabled="isConfirmDeleting" @click="closeConfirm">Cancel</v-btn>
+          <v-btn color="error" variant="flat" :loading="isConfirmDeleting" data-testid="confirm-delete-btn" @click="onConfirmDelete">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Clone environment dialog -->
     <v-dialog v-model="showCloneDialog" max-width="400">
@@ -451,25 +468,16 @@
     </v-dialog>
 
     <!-- Delete environment dialog -->
-    <v-dialog v-model="showDeleteEnvDialog" max-width="400">
+    <v-dialog v-model="showDeleteEnvDialog" max-width="400" persistent>
       <v-card rounded="lg" data-testid="delete-env-dialog">
         <v-card-title class="text-body-1 font-weight-bold pa-4 pb-2">Delete Environment</v-card-title>
         <v-card-text class="pa-4 pt-0">
-          <p class="text-body-2 mb-2">Delete <strong>{{ deletingEnv?.name }}</strong>? This cannot be undone.</p>
-          <p class="text-body-2 mb-2">Type <strong>{{ deletingEnv?.name }}</strong> to confirm:</p>
-          <v-text-field
-            v-model="deleteEnvConfirmName"
-            variant="outlined"
-            density="compact"
-            hide-details
-            :placeholder="deletingEnv?.name"
-            data-testid="delete-env-confirm-input"
-          />
+          <p class="text-body-2">Delete <strong>{{ deletingEnv?.name }}</strong>? This cannot be undone.</p>
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
-          <v-btn variant="text" @click="showDeleteEnvDialog = false">Cancel</v-btn>
-          <v-btn color="error" variant="flat" :disabled="deleteEnvConfirmName !== deletingEnv?.name" :loading="isDeletingEnv" data-testid="confirm-delete-env-btn" @click="onDeleteEnvironment">Delete</v-btn>
+          <v-btn variant="text" :disabled="isDeletingEnv" @click="showDeleteEnvDialog = false">Cancel</v-btn>
+          <v-btn color="error" variant="flat" :loading="isDeletingEnv" data-testid="confirm-delete-env-btn" @click="onDeleteEnvironment">Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -510,7 +518,7 @@
     <v-dialog v-model="showRawKeyDialog" max-width="480" persistent>
       <v-card rounded="lg" data-testid="raw-key-dialog">
         <v-card-title class="pa-4 pb-2 d-flex align-center ga-2">
-          <v-icon color="warning">mdi-alert</v-icon>
+          <v-icon color="warning">ri-alert-line</v-icon>
           <span class="text-body-1 font-weight-bold">Save your API key</span>
         </v-card-title>
         <v-card-text class="pa-4 pt-0">
@@ -521,7 +529,7 @@
             density="compact"
             readonly
             hide-details
-            :append-inner-icon="rawKeyCopied ? 'mdi-check' : 'mdi-content-copy'"
+            :append-inner-icon="rawKeyCopied ? 'ri-check-line' : 'ri-file-copy-line'"
             data-testid="raw-key-field"
             @click:append-inner="copyRawKey"
           />
@@ -549,6 +557,37 @@ import type { OrganizationMemberResponse, UserPermissionResponse, EnvironmentRes
 const contextStore = useContextStore();
 
 const activeTab = ref('organization');
+
+// ── Shared confirm dialog ─────────────────────────────────────────────────────
+type ConfirmType = 'member' | 'permission' | 'apiKey';
+const showConfirmDialog = ref(false);
+const confirmType = ref<ConfirmType>('member');
+const confirmId = ref(0);
+const confirmLabel = ref('');
+const isConfirmDeleting = ref(false);
+
+function openConfirm(type: ConfirmType, id: number, label: string): void {
+  confirmType.value = type;
+  confirmId.value = id;
+  confirmLabel.value = label;
+  showConfirmDialog.value = true;
+}
+
+function closeConfirm(): void {
+  showConfirmDialog.value = false;
+}
+
+async function onConfirmDelete(): Promise<void> {
+  isConfirmDeleting.value = true;
+  try {
+    if (confirmType.value === 'member') await onRemoveMember(confirmId.value);
+    else if (confirmType.value === 'permission') await onRemovePermission(confirmId.value);
+    else if (confirmType.value === 'apiKey') await onDeleteApiKey(confirmId.value);
+    closeConfirm();
+  } finally {
+    isConfirmDeleting.value = false;
+  }
+}
 
 // ── Organization ──────────────────────────────────────────────────────────────
 const orgNameInput = ref('');
@@ -751,7 +790,6 @@ const isRenaming = ref(false);
 
 const showDeleteEnvDialog = ref(false);
 const deletingEnv = ref<EnvironmentResponse | null>(null);
-const deleteEnvConfirmName = ref('');
 const isDeletingEnv = ref(false);
 
 watch(() => contextStore.currentProject, (project) => {
@@ -800,7 +838,6 @@ function openRenameDialog(env: EnvironmentResponse): void {
 
 function openDeleteEnvConfirm(env: EnvironmentResponse): void {
   deletingEnv.value = env;
-  deleteEnvConfirmName.value = '';
   showDeleteEnvDialog.value = true;
 }
 
@@ -836,7 +873,7 @@ async function onRenameEnvironment(): Promise<void> {
 }
 
 async function onDeleteEnvironment(): Promise<void> {
-  if (!deletingEnv.value || deleteEnvConfirmName.value !== deletingEnv.value.name) return;
+  if (!deletingEnv.value) return;
   isDeletingEnv.value = true;
   envError.value = null;
   try {

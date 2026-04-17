@@ -28,7 +28,7 @@ public class AuditLogsController(
         if (org is null) return NotFound();
 
         var (total, logs) = await auditLogQueryService.ListByOrganizationAsync(id, filter, ct);
-        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.ToList()));
     }
 
     [HttpGet("api/v1/projects/{projectId}/audit-logs")]
@@ -41,7 +41,7 @@ public class AuditLogsController(
         if (project is null) return NotFound();
 
         var (total, logs) = await auditLogQueryService.ListByProjectAsync(projectId, filter, ct);
-        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.ToList()));
     }
 
     [HttpGet("api/v1/environments/{apiKey}/audit-logs")]
@@ -54,6 +54,6 @@ public class AuditLogsController(
         if (environment is null) return NotFound();
 
         var (total, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, filter, ct);
-        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.ToList()));
     }
 }

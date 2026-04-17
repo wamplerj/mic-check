@@ -12,7 +12,7 @@
       :loading="isLoading"
       :disabled="isLoading"
       no-data-text="No organizations found"
-      prepend-inner-icon="mdi-domain"
+      prepend-inner-icon="ri-building-line"
       data-testid="org-select"
       @update:model-value="onOrgSelected"
     />
@@ -21,7 +21,7 @@
       size="x-small"
       variant="text"
       color="primary"
-      prepend-icon="mdi-plus"
+      prepend-icon="ri-add-line"
       class="mt-1 px-1"
       data-testid="create-org-btn"
       @click="openCreateDialog"

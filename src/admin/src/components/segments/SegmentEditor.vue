@@ -8,7 +8,7 @@
     <v-card rounded="lg" data-testid="segment-editor">
       <v-card-title class="d-flex align-center justify-space-between pa-6 pb-3">
         <span class="text-h6">{{ segment ? 'Edit Segment' : 'Create Segment' }}</span>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('update:modelValue', false)" />
+        <v-btn icon="ri-close-line" variant="text" size="small" @click="$emit('update:modelValue', false)" />
       </v-card-title>
       <v-divider />
 
@@ -61,7 +61,7 @@
           size="small"
           variant="tonal"
           color="primary"
-          prepend-icon="mdi-plus"
+          prepend-icon="ri-add-line"
           data-testid="add-rule-group-btn"
           @click="onAddRuleGroup"
         >
