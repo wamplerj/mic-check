@@ -9,7 +9,7 @@
           <v-card-text class="pa-6">
             <div class="d-flex align-center ga-4 mb-6">
               <v-avatar size="56">
-                <img :src="gravatarUrl" :alt="authStore.displayName" referrerpolicy="no-referrer" />
+                <v-img :src="gravatarUrl" :alt="authStore.displayName" referrerpolicy="no-referrer" />
               </v-avatar>
               <div>
                 <p class="text-body-1 font-weight-medium mb-0" data-testid="profile-display-name">
@@ -24,7 +24,7 @@
             <v-divider class="mb-5" />
 
             <v-form ref="profileFormRef" @submit.prevent="onSaveProfile">
-              <v-row dense>
+              <v-row dense class="mb-2">
                 <v-col cols="6">
                   <v-text-field
                     v-model="profileForm.firstName"
@@ -53,22 +53,23 @@
                 type="email"
                 variant="outlined"
                 density="compact"
-                :rules="[required]"
+                :rules="[required, validateEmail]"
                 :error-messages="profileError ? [profileError] : []"
                 class="mb-2"
                 data-testid="email-input"
               />
 
-              <v-btn
-                type="submit"
-                color="primary"
-                variant="flat"
-                block
-                :loading="isSavingProfile"
-                data-testid="save-profile-btn"
-              >
-                Save changes
-              </v-btn>
+              <div class="d-flex justify-end">
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  variant="flat"
+                  :loading="isSavingProfile"
+                  data-testid="save-profile-btn"
+                >
+                  Save changes
+                </v-btn>
+              </div>
 
               <v-alert
                 v-if="profileSuccess"
@@ -95,17 +96,18 @@
         <!-- Sign Out Card -->
         <v-card rounded="lg">
           <v-card-text class="pa-6">
-            <v-btn
-              color="error"
-              variant="outlined"
-              prepend-icon="ri-logout-box-line"
-              block
-              :loading="isLoggingOut"
-              data-testid="logout-btn"
-              @click="onLogout"
-            >
-              Sign out
-            </v-btn>
+            <div class="d-flex justify-end">
+              <v-btn
+                color="error"
+                variant="outlined"
+                prepend-icon="ri-logout-box-line"
+                :loading="isLoggingOut"
+                data-testid="logout-btn"
+                @click="onLogout"
+              >
+                Sign out
+              </v-btn>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -156,16 +158,17 @@
                 @click:append-inner="showConfirm = !showConfirm"
               />
 
-              <v-btn
-                type="submit"
-                color="primary"
-                variant="flat"
-                block
-                :loading="isChangingPassword"
-                data-testid="change-password-btn"
-              >
-                Change password
-              </v-btn>
+              <div class="d-flex justify-end">
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  variant="flat"
+                  :loading="isChangingPassword"
+                  data-testid="change-password-btn"
+                >
+                  Change password
+                </v-btn>
+              </div>
 
               <v-alert
                 v-if="passwordError"
@@ -202,6 +205,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import OrgSelector from '@/components/nav/OrgSelector.vue';
 import { getMe, updateMe, changePassword } from '@/api/users';
+import { validateEmail } from '@/utils/validation';
 
 const authStore = useAuthStore();
 const router = useRouter();

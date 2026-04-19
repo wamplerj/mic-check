@@ -89,6 +89,54 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok();
     }
 
+    [HttpPost("{id}/users/invite-by-email")]
+    public async Task<ActionResult<IReadOnlyList<InviteByEmailResult>>> InviteUsersByEmail(
+        int id, InviteUsersByEmailRequest request, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var results = await organizationService.InviteUsersByEmailAsync(id, request.Invites, ct);
+        return Ok(results);
+    }
+
+    [HttpGet("{id}/invite-link")]
+    public async Task<ActionResult<InviteTokenResponse>> GetInviteLink(int id, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var token = await organizationService.GetOrCreateInviteTokenAsync(id, ct);
+        return Ok(new InviteTokenResponse(token));
+    }
+
+    [HttpPost("{id}/invite-link/regenerate")]
+    public async Task<ActionResult<InviteTokenResponse>> RegenerateInviteLink(int id, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var token = await organizationService.RegenerateInviteTokenAsync(id, ct);
+        return Ok(new InviteTokenResponse(token));
+    }
+
+    [HttpPost("invite/{token}/accept")]
+    public async Task<IActionResult> AcceptInvite(string token, CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        try
+        {
+            await organizationService.AcceptInviteAsync(token, userId.Value, ct);
+            return Ok();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Invalid or expired invite link.");
+        }
+    }
+
     [HttpDelete("{id}/users/{userId}")]
     public async Task<IActionResult> RemoveUser(int id, int userId, CancellationToken ct)
     {

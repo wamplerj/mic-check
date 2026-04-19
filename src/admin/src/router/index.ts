@@ -76,6 +76,12 @@ const routes: RouteRecordRaw[] = [
         meta: { public: true },
       },
       {
+        path: 'accept-invite/:token',
+        name: 'AcceptInvite',
+        component: () => import('@/views/AcceptInviteView.vue'),
+        meta: { public: true, allowAuthenticated: true },
+      },
+      {
         path: 'register',
         name: 'Register',
         component: () => import('@/views/RegisterView.vue'),
@@ -105,7 +111,7 @@ router.beforeEach((to) => {
     return { name: 'Login', query: { redirect: to.fullPath } };
   }
 
-  if (isPublic && isAuthenticated) {
+  if (isPublic && isAuthenticated && !to.matched.some((r) => r.meta.allowAuthenticated)) {
     return { name: 'Dashboard' };
   }
 

@@ -5,6 +5,9 @@ import type {
   UpdateOrganizationRequest,
   OrganizationMemberResponse,
   InviteUserRequest,
+  InviteUsersByEmailRequest,
+  InviteByEmailResult,
+  InviteTokenResponse,
   PaginatedResponse,
 } from '@/types/api';
 
@@ -48,4 +51,33 @@ export async function inviteOrganizationMember(organizationId: number, request: 
 
 export async function removeOrganizationMember(organizationId: number, userId: number): Promise<void> {
   await apiClient.delete(`/v1/organisations/${organizationId}/users/${userId}`);
+}
+
+export async function inviteOrganizationMembersByEmail(
+  organizationId: number,
+  request: InviteUsersByEmailRequest,
+): Promise<InviteByEmailResult[]> {
+  const { data } = await apiClient.post<InviteByEmailResult[]>(
+    `/v1/organisations/${organizationId}/users/invite-by-email`,
+    request,
+  );
+  return data;
+}
+
+export async function getInviteLink(organizationId: number): Promise<InviteTokenResponse> {
+  const { data } = await apiClient.get<InviteTokenResponse>(
+    `/v1/organisations/${organizationId}/invite-link`,
+  );
+  return data;
+}
+
+export async function regenerateInviteLink(organizationId: number): Promise<InviteTokenResponse> {
+  const { data } = await apiClient.post<InviteTokenResponse>(
+    `/v1/organisations/${organizationId}/invite-link/regenerate`,
+  );
+  return data;
+}
+
+export async function acceptInvite(token: string): Promise<void> {
+  await apiClient.post(`/v1/organisations/invite/${token}/accept`);
 }

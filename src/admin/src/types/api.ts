@@ -88,6 +88,25 @@ export interface InviteUserRequest {
   role: 'Admin' | 'User';
 }
 
+export interface InviteByEmailEntry {
+  email: string;
+  role: 'Admin' | 'User';
+}
+
+export interface InviteUsersByEmailRequest {
+  invites: InviteByEmailEntry[];
+}
+
+export interface InviteByEmailResult {
+  email: string;
+  success: boolean;
+  error: string | null;
+}
+
+export interface InviteTokenResponse {
+  token: string;
+}
+
 // ─── API Keys ─────────────────────────────────────────────────────────────────
 
 export interface CreateApiKeyRequest {

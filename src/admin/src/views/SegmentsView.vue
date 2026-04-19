@@ -33,6 +33,7 @@
           :items-per-page="20"
           hover
           data-testid="segments-table"
+          @click:row="(_: Event, { item }: { item: SegmentResponse }) => openEditDialog(item)"
         >
           <!-- Name -->
           <template #item.name="{ item }: { item: SegmentResponse }">
@@ -51,21 +52,14 @@
 
           <!-- Actions -->
           <template #item.actions="{ item }: { item: SegmentResponse }">
-            <div class="d-flex align-center">
-              <v-btn
-                icon="ri-edit-line"
-                size="small"
-                variant="text"
-                :data-testid="`edit-segment-${item.id}`"
-                @click="openEditDialog(item)"
-              />
+            <div class="d-flex align-center justify-end">
               <v-btn
                 icon="ri-delete-bin-line"
                 size="small"
                 variant="text"
                 color="error"
                 :data-testid="`delete-segment-${item.id}`"
-                @click="openDeleteConfirm(item)"
+                @click.stop="openDeleteConfirm(item)"
               />
             </div>
           </template>
@@ -153,7 +147,7 @@ const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Rules', key: 'rules', sortable: false, width: '80' },
   { title: 'Created', key: 'createdAt', sortable: true, width: '130' },
-  { title: '', key: 'actions', sortable: false, width: '80', align: 'end' as const },
+  { title: '', key: 'actions', sortable: false, width: '52', align: 'end' as const },
 ];
 
 function showError(message: string): void {

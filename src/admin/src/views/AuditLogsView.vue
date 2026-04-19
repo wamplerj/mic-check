@@ -116,11 +116,6 @@
             <span class="text-body-2 font-weight-medium">{{ item.resourceType }}</span>
           </template>
 
-          <!-- Resource ID -->
-          <template #item.resourceId="{ item }: { item: AuditLogResponse }">
-            <span class="text-body-2 text-medium-emphasis">{{ item.resourceId }}</span>
-          </template>
-
           <!-- Changes (expandable) -->
           <template #item.changes="{ item }: { item: AuditLogResponse }">
             <div v-if="item.changes">
@@ -226,7 +221,6 @@ const headers = [
   { title: 'User', key: 'actorUserName', sortable: false },
   { title: 'Action', key: 'action', sortable: false, width: '120' },
   { title: 'Resource Type', key: 'resourceType', sortable: false, width: '160' },
-  { title: 'Resource ID', key: 'resourceId', sortable: false },
   { title: 'Changes', key: 'changes', sortable: false },
 ];
 
