@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -79,7 +79,7 @@ public class ProjectsController(ProjectService projectService) : ControllerBase
         if (project is null) return NotFound();
 
         var permissions = request.Permissions
-            .Select(p => Enum.Parse<Authorization.ProjectPermission>(p, ignoreCase: true))
+            .Select(p => Enum.Parse<ProjectPermission>(p, ignoreCase: true))
             .ToList();
 
         var perm = await projectService.SetUserPermissionsAsync(id, request.UserId, request.IsAdmin, permissions, ct);
@@ -94,7 +94,7 @@ public class ProjectsController(ProjectService projectService) : ControllerBase
         if (project is null) return NotFound();
 
         var permissions = request.Permissions
-            .Select(p => Enum.Parse<Authorization.ProjectPermission>(p, ignoreCase: true))
+            .Select(p => Enum.Parse<ProjectPermission>(p, ignoreCase: true))
             .ToList();
 
         var perm = await projectService.SetUserPermissionsAsync(id, userId, request.IsAdmin, permissions, ct);

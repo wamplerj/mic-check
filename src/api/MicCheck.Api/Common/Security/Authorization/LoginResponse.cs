@@ -1,0 +1,3 @@
+namespace MicCheck.Api.Common.Security.Authorization;
+
+public record LoginResponse(string AccessToken, string RefreshToken, DateTime ExpiresAt);

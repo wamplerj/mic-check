@@ -23,4 +23,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\MicCheck.ServiceDefaults\MicCheck.ServiceDefaults.csproj" />
+  </ItemGroup>
+
 </Project>

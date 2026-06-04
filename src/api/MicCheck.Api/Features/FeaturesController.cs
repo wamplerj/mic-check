@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,8 +31,7 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
     {
         try
         {
-            var feature = await featureService.CreateAsync(
-                projectId, request.Name, request.Type, request.InitialValue, request.Description, ct);
+            var feature = await featureService.CreateAsync(projectId, request.Name, request.Type, request.InitialValue, request.Description, ct);
 
             return CreatedAtAction(nameof(GetById), new { projectId, id = feature.Id }, FeatureResponse.From(feature));
         }

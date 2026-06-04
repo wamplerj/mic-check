@@ -1,6 +1,6 @@
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Audit;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Features;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Organizations;

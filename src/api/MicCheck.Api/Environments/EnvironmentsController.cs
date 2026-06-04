@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using MicCheck.Api.Webhooks;
 using Microsoft.AspNetCore.Authorization;

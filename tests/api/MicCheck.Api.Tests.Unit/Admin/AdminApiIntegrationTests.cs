@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
 using MicCheck.Api.Organizations;

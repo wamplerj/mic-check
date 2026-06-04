@@ -1,4 +1,4 @@
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Audit;
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
