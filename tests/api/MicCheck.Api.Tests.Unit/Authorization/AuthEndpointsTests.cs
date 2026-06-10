@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using NUnit.Framework;
 
 namespace MicCheck.Api.Tests.Unit.Authorization;

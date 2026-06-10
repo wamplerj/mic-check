@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

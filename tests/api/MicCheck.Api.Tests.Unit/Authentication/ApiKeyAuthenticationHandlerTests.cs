@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Data;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;

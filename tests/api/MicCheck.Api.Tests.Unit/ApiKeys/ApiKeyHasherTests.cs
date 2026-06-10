@@ -1,4 +1,4 @@
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using NUnit.Framework;
 
 namespace MicCheck.Api.Tests.Unit.ApiKeys;

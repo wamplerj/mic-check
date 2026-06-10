@@ -14,6 +14,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <UserSecretsId>d10a4485-2ac0-4ba7-bda5-8eb63e417567</UserSecretsId>
   </PropertyGroup>
 

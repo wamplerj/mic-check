@@ -1,5 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Organizations;
 using MicCheck.Api.Users;
 using Microsoft.Extensions.Configuration;
