@@ -21,8 +21,8 @@
             </v-alert>
 
             <v-form ref="formRef" @submit.prevent="onSubmit" data-testid="register-form">
-              <v-row>
-                <v-col cols="12" sm="6" class="pb-0">
+              <v-row no-gutters class="mb-3">
+                <v-col cols="12" sm="6" class="pr-sm-2">
                   <v-text-field
                     v-model="firstName"
                     label="First name"
@@ -30,10 +30,11 @@
                     variant="outlined"
                     density="comfortable"
                     :rules="[rules.required]"
+                    :hide-details="false"
                     data-testid="first-name-input"
                   />
                 </v-col>
-                <v-col cols="12" sm="6" class="pb-0">
+                <v-col cols="12" sm="6" class="pl-sm-2">
                   <v-text-field
                     v-model="lastName"
                     label="Last name"
@@ -41,6 +42,7 @@
                     variant="outlined"
                     density="comfortable"
                     :rules="[rules.required]"
+                    :hide-details="false"
                     data-testid="last-name-input"
                   />
                 </v-col>
@@ -53,8 +55,9 @@
                 autocomplete="email"
                 variant="outlined"
                 density="comfortable"
-                class="mb-3"
                 :rules="[rules.required, rules.email]"
+                :hide-details="false"
+                class="mb-3"
                 data-testid="email-input"
               />
 
@@ -64,8 +67,9 @@
                 autocomplete="organization"
                 variant="outlined"
                 density="comfortable"
-                class="mb-3"
                 :rules="[rules.required]"
+                :hide-details="false"
+                class="mb-3"
                 data-testid="org-name-input"
               />
 
@@ -76,10 +80,11 @@
                 autocomplete="new-password"
                 variant="outlined"
                 density="comfortable"
-                class="mb-3"
                 :rules="[rules.required, rules.minLength]"
                 :append-inner-icon="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"
                 @click:append-inner="showPassword = !showPassword"
+                :hide-details="false"
+                class="mb-3"
                 data-testid="password-input"
               />
 
@@ -90,8 +95,9 @@
                 autocomplete="new-password"
                 variant="outlined"
                 density="comfortable"
-                class="mb-4"
                 :rules="[rules.required, rules.passwordMatch]"
+                :hide-details="false"
+                class="mb-4"
                 data-testid="confirm-password-input"
               />
 
@@ -183,5 +189,9 @@ async function onSubmit(): Promise<void> {
 <style scoped>
 .auth-bg {
   background: rgb(var(--v-theme-background));
+}
+
+:deep(.v-input__details) {
+  min-height: 22px;
 }
 </style>
