@@ -17,7 +17,7 @@ import * as projectsApi from '@/api/projects';
 
 const dialogStub = { template: '<div><slot /></div>' };
 
-const mockOrg: OrganizationResponse = { id: 1, name: 'Acme', createdAt: '2026-01-01T00:00:00Z' };
+const mockOrg: OrganizationResponse = { id: 1, name: 'Acme', createdAt: '2026-01-01T00:00:00Z', isPrimary: false };
 const mockProjects: ProjectResponse[] = [
   { id: 10, name: 'Website', organizationId: 1, hideDisabledFlags: false, createdAt: '2026-01-01T00:00:00Z' },
   { id: 11, name: 'Mobile App', organizationId: 1, hideDisabledFlags: false, createdAt: '2026-01-01T00:00:00Z' },
@@ -104,6 +104,54 @@ describe('ProjectSelector', () => {
     });
   });
 
+  describe('WhenStoredProjectExistsInContextStore', () => {
+    it('ThenStoredProjectIsRestoredAfterFetch', async () => {
+      jest.mocked(projectsApi.listProjects).mockResolvedValue(mockProjects);
+
+      const contextStore = useContextStore();
+      contextStore.setOrganization(mockOrg);
+      contextStore.setProject(mockProjects[1]);
+
+      mountComponent();
+      await flushPromises();
+
+      expect(contextStore.currentProject).toEqual(mockProjects[1]);
+    });
+
+    it('ThenProjectIsClearedWhenNotFoundInNewOrg', async () => {
+      jest.mocked(projectsApi.listProjects).mockResolvedValue(mockProjects);
+
+      const contextStore = useContextStore();
+      contextStore.setOrganization(mockOrg);
+      contextStore.setProject(mockProjects[0]);
+
+      mountComponent();
+      await flushPromises();
+
+      const newOrg: OrganizationResponse = { id: 2, name: 'Globex', createdAt: '2026-01-01T00:00:00Z', isPrimary: false };
+      jest.mocked(projectsApi.listProjects).mockResolvedValue([]);
+      contextStore.setOrganization(newOrg);
+      await flushPromises();
+
+      expect(contextStore.currentProject).toBeNull();
+    });
+  });
+
+  describe('WhenSingleProjectIsAvailable', () => {
+    it('ThenItIsAutoSelected', async () => {
+      const singleProject = mockProjects[0];
+      jest.mocked(projectsApi.listProjects).mockResolvedValue([singleProject]);
+
+      const contextStore = useContextStore();
+      mountComponent();
+
+      contextStore.setOrganization(mockOrg);
+      await flushPromises();
+
+      expect(contextStore.currentProject).toEqual(singleProject);
+    });
+  });
+
   describe('WhenOrganizationChanges', () => {
     it('ThenProjectsAreReloaded', async () => {
       jest.mocked(projectsApi.listProjects).mockResolvedValue(mockProjects);
@@ -114,7 +162,7 @@ describe('ProjectSelector', () => {
       contextStore.setOrganization(mockOrg);
       await flushPromises();
 
-      const newOrg: OrganizationResponse = { id: 2, name: 'Globex', createdAt: '2026-01-01T00:00:00Z' };
+      const newOrg: OrganizationResponse = { id: 2, name: 'Globex', createdAt: '2026-01-01T00:00:00Z', isPrimary: false };
       contextStore.setOrganization(newOrg);
       await flushPromises();
 

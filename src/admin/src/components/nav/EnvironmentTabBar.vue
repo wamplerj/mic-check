@@ -86,11 +86,22 @@ async function fetchEnvironments(projectId: number): Promise<void> {
   isLoading.value = true;
   try {
     environments.value = await listEnvironments(projectId);
-    if (environments.value.length > 0 && !contextStore.currentEnvironment) {
-      contextStore.setEnvironment(environments.value[0]);
-    }
+    autoSelectEnvironment();
   } finally {
     isLoading.value = false;
+  }
+}
+
+function autoSelectEnvironment(): void {
+  if (contextStore.currentEnvironment) {
+    const fresh = environments.value.find(e => e.id === contextStore.currentEnvironment!.id);
+    if (fresh) {
+      contextStore.refreshEnvironment(fresh);
+      return;
+    }
+  }
+  if (environments.value.length > 0) {
+    contextStore.setEnvironment(environments.value[0]);
   }
 }
 
@@ -127,11 +138,12 @@ async function onCreateConfirm(): Promise<void> {
 }
 
 watch(
-  () => contextStore.currentProject,
-  (project) => {
+  () => contextStore.currentProject?.id,
+  (projectId, oldProjectId) => {
+    if (projectId === oldProjectId) return;
     environments.value = [];
-    contextStore.setEnvironment(null);
-    if (project) fetchEnvironments(project.id);
+    if (oldProjectId !== undefined) contextStore.setEnvironment(null);
+    if (projectId) fetchEnvironments(projectId);
   },
   { immediate: true },
 );

@@ -26,7 +26,7 @@ import * as environmentsApi from '@/api/environments';
 import * as apiKeysApi from '@/api/apiKeys';
 import * as webhooksApi from '@/api/webhooks';
 
-const mockOrg: OrganizationResponse = { id: 1, name: 'Acme', createdAt: '2026-01-01T00:00:00Z' };
+const mockOrg: OrganizationResponse = { id: 1, name: 'Acme', createdAt: '2026-01-01T00:00:00Z', isPrimary: false };
 const mockProject: ProjectResponse = { id: 10, name: 'Website', organizationId: 1, hideDisabledFlags: false, createdAt: '2026-01-01T00:00:00Z' };
 const mockEnvs: EnvironmentResponse[] = [
   { id: 100, name: 'Development', apiKey: 'env-dev', projectId: 10, createdAt: '2026-01-01T00:00:00Z' },

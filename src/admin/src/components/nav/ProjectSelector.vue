@@ -86,8 +86,24 @@ async function fetchProjects(organizationId: number): Promise<void> {
   isLoading.value = true;
   try {
     projects.value = await listProjects(organizationId);
+    autoSelectProject();
   } finally {
     isLoading.value = false;
+  }
+}
+
+function autoSelectProject(): void {
+  if (contextStore.currentProject) {
+    const fresh = projects.value.find(p => p.id === contextStore.currentProject!.id);
+    if (fresh) {
+      contextStore.refreshProject(fresh);
+      return;
+    }
+    contextStore.setProject(null);
+    return;
+  }
+  if (projects.value.length === 1) {
+    contextStore.setProject(projects.value[0]);
   }
 }
 
@@ -124,12 +140,11 @@ async function onCreateConfirm(): Promise<void> {
 }
 
 watch(
-  () => contextStore.currentOrganization,
-  (org) => {
+  () => contextStore.currentOrganization?.id,
+  (orgId, oldOrgId) => {
+    if (orgId === oldOrgId) return;
     projects.value = [];
-    if (org) {
-      fetchProjects(org.id);
-    }
+    if (orgId) fetchProjects(orgId);
   },
   { immediate: true },
 );

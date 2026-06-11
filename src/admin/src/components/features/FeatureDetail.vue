@@ -29,7 +29,7 @@
       </v-tabs>
       <v-divider />
 
-      <v-card-text class="pa-0" style="height: 480px; overflow-y: auto;">
+      <v-card-text class="pa-0" style="height: 580px; overflow-y: auto;">
         <v-tabs-window v-model="activeTab">
           <!-- ── Value tab ─────────────────────────────────────────────── -->
           <v-tabs-window-item value="value" class="pa-6">

@@ -46,7 +46,7 @@ describe('FeatureDetail', () => {
     setActivePinia(createPinia());
     jest.clearAllMocks();
     const contextStore = useContextStore();
-    contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+    contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
     contextStore.setProject(mockProject);
     contextStore.setEnvironment({ id: 100, name: 'Development', apiKey: 'env-dev', projectId: 10, createdAt: '' });
   });

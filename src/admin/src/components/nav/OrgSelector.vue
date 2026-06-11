@@ -96,7 +96,7 @@ function autoSelectOrganization(): void {
   if (contextStore.currentOrganization) {
     // Refresh stored org with latest data from API (name may have changed)
     const fresh = organizations.value.find(o => o.id === contextStore.currentOrganization!.id);
-    if (fresh) contextStore.setOrganization(fresh);
+    if (fresh) contextStore.refreshOrganization(fresh);
     return;
   }
 

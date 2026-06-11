@@ -33,6 +33,7 @@
         <v-form ref="createFormRef" @submit.prevent="onCreateTag">
           <div class="d-flex align-center ga-2">
             <v-text-field
+              ref="tagLabelInputRef"
               v-model="newTagLabel"
               label="Tag name"
               variant="outlined"
@@ -47,6 +48,7 @@
               style="width:36px;height:36px;border:none;padding:2px;cursor:pointer;border-radius:4px"
               title="Tag colour"
               data-testid="new-tag-color-input"
+              @blur="focusTagLabel"
             />
             <v-btn
               icon="ri-check-line"
@@ -99,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { listTags, createTag, deleteTag } from '@/api/tags';
 import { useContextStore } from '@/stores/context';
 import type { TagResponse } from '@/types/api';
@@ -114,6 +116,15 @@ const newTagLabel = ref('');
 const newTagColor = ref('#1565C0');
 const errorMessage = ref<string | null>(null);
 const createFormRef = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null);
+const tagLabelInputRef = ref<{ focus: () => void } | null>(null);
+
+function focusTagLabel(): void {
+  nextTick(() => tagLabelInputRef.value?.focus());
+}
+
+watch(showCreateForm, (open) => {
+  if (open) focusTagLabel();
+});
 
 const rules = {
   required: (v: string) => !!v || 'Tag name is required',

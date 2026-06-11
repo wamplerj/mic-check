@@ -18,8 +18,8 @@ import * as orgsApi from '@/api/organizations';
 const dialogStub = { template: '<div><slot /></div>' };
 
 const mockOrgs: OrganizationResponse[] = [
-  { id: 1, name: 'Acme Corp', createdAt: '2026-01-01T00:00:00Z' },
-  { id: 2, name: 'Globex', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 1, name: 'Acme Corp', createdAt: '2026-01-01T00:00:00Z', isPrimary: false },
+  { id: 2, name: 'Globex', createdAt: '2026-01-01T00:00:00Z', isPrimary: false },
 ];
 
 function mountComponent() {
@@ -132,7 +132,7 @@ describe('OrgSelector', () => {
   });
 
   describe('WhenCreateOrganizationIsConfirmed', () => {
-    const newOrg: OrganizationResponse = { id: 3, name: 'New Org', createdAt: '2026-04-13T00:00:00Z' };
+    const newOrg: OrganizationResponse = { id: 3, name: 'New Org', createdAt: '2026-04-13T00:00:00Z', isPrimary: false };
 
     it('ThenCreateOrganizationApiIsCalled', async () => {
       jest.mocked(orgsApi.listOrganizations).mockResolvedValue([]);

@@ -46,6 +46,21 @@ export const useContextStore = defineStore('context', () => {
     }
   }
 
+  function refreshOrganization(org: OrganizationResponse): void {
+    currentOrganization.value = org;
+    localStorage.setItem(STORAGE_KEYS.organization, JSON.stringify(org));
+  }
+
+  function refreshProject(project: ProjectResponse): void {
+    currentProject.value = project;
+    localStorage.setItem(STORAGE_KEYS.project, JSON.stringify(project));
+  }
+
+  function refreshEnvironment(environment: EnvironmentResponse): void {
+    currentEnvironment.value = environment;
+    localStorage.setItem(STORAGE_KEYS.environment, JSON.stringify(environment));
+  }
+
   function loadFromStorage(): void {
     try {
       const orgRaw = localStorage.getItem(STORAGE_KEYS.organization);
@@ -79,6 +94,9 @@ export const useContextStore = defineStore('context', () => {
     setOrganization,
     setProject,
     setEnvironment,
+    refreshOrganization,
+    refreshProject,
+    refreshEnvironment,
     loadFromStorage,
     clearContext,
   };

@@ -57,7 +57,7 @@ describe('IdentitiesView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -73,7 +73,7 @@ describe('IdentitiesView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -91,7 +91,7 @@ describe('IdentitiesView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -115,7 +115,7 @@ describe('IdentitiesView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -137,7 +137,7 @@ describe('IdentitiesView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -163,7 +163,7 @@ describe('IdentitiesView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 

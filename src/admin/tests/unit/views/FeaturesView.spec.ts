@@ -58,7 +58,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue(mockStates);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -74,7 +74,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue(mockStates);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -92,7 +92,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.patchFeatureState).mockResolvedValue({ ...mockStates[0], enabled: true });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -115,7 +115,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue([]);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();

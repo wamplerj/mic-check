@@ -44,7 +44,7 @@ describe('ProfileView', () => {
     it('ThenOrgNameIsDisplayedWhenSelected', () => {
       const { wrapper } = mountView();
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme Corp', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme Corp', createdAt: '', isPrimary: false });
 
       expect(wrapper.find('[data-testid="profile-org-name"]').exists()).toBe(false); // org name shown in v-if block
     });

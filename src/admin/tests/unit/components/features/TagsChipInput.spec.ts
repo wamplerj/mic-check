@@ -33,7 +33,7 @@ describe('TagsChipInput', () => {
     setActivePinia(createPinia());
     jest.clearAllMocks();
     const contextStore = useContextStore();
-    contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+    contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
     contextStore.setProject(mockProject);
   });
 
