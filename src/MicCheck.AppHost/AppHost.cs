@@ -4,6 +4,11 @@ var postgres = builder.AddPostgres("postgres").WithDataVolume("miccheck-pgdata")
 
 var miccheckDb = postgres.AddDatabase("miccheck");
 
-builder.AddProject<Projects.MicCheck_Api>("api").WithReference(miccheckDb).WaitFor(miccheckDb);
+var api = builder.AddProject<Projects.MicCheck_Api>("api").WithReference(miccheckDb).WaitFor(miccheckDb);
+
+builder.AddViteApp("admin", "../admin", "serve")
+    .WithReference(api)
+    .WaitFor(api)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();

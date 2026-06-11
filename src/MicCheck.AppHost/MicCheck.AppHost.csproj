@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\api\MicCheck.Api\MicCheck.Api.csproj" />
+    <ProjectReference Include="..\admin\Admin.esproj" />
   </ItemGroup>
 
   <ItemGroup>
