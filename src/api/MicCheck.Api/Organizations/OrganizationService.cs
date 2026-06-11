@@ -1,6 +1,5 @@
 using MicCheck.Api.Audit;
 using MicCheck.Api.Data;
-using MicCheck.Api.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Organizations;
@@ -151,8 +150,7 @@ public class OrganizationService(MicCheckDbContext db, AuditService auditService
     public async Task<Organization?> FindByInviteTokenAsync(string token, CancellationToken ct = default) =>
         await db.Organizations.FirstOrDefaultAsync(o => o.InviteToken == token, ct);
 
-    public async Task<IReadOnlyList<InviteByEmailResult>> InviteUsersByEmailAsync(
-        int organizationId, IReadOnlyList<InviteByEmailEntry> invites, CancellationToken ct = default)
+    public async Task<IReadOnlyList<InviteByEmailResult>> InviteUsersByEmailAsync(int organizationId, IReadOnlyList<InviteByEmailEntry> invites, CancellationToken ct = default)
     {
         var results = new List<InviteByEmailResult>();
 

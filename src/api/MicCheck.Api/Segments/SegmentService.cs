@@ -5,15 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Segments;
 
-public record SegmentConditionDefinition(
-    string Property,
-    SegmentConditionOperator Operator,
-    string Value);
+public record SegmentConditionDefinition(string Property, SegmentConditionOperator Operator, string Value);
 
-public record SegmentRuleDefinition(
-    SegmentRuleType Type,
-    IReadOnlyList<SegmentConditionDefinition> Conditions,
-    IReadOnlyList<SegmentRuleDefinition>? ChildRules = null);
+public record SegmentRuleDefinition(SegmentRuleType Type, IReadOnlyList<SegmentConditionDefinition> Conditions, IReadOnlyList<SegmentRuleDefinition>? ChildRules = null);
 
 public class SegmentService(MicCheckDbContext db, AuditService auditService)
 {
@@ -37,11 +31,7 @@ public class SegmentService(MicCheckDbContext db, AuditService auditService)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
     }
 
-    public async Task<Segment> CreateAsync(
-        int projectId,
-        string name,
-        IReadOnlyList<SegmentRuleDefinition> rules,
-        CancellationToken ct = default)
+    public async Task<Segment> CreateAsync(int projectId, string name, IReadOnlyList<SegmentRuleDefinition> rules, CancellationToken ct = default)
     {
         var count = await db.Segments.CountAsync(s => s.ProjectId == projectId, ct);
         if (count >= MaxSegmentsPerProject)
@@ -75,11 +65,7 @@ public class SegmentService(MicCheckDbContext db, AuditService auditService)
         return segment;
     }
 
-    public async Task<Segment> UpdateAsync(
-        int id,
-        string name,
-        IReadOnlyList<SegmentRuleDefinition> rules,
-        CancellationToken ct = default)
+    public async Task<Segment> UpdateAsync(int id, string name, IReadOnlyList<SegmentRuleDefinition> rules, CancellationToken ct = default)
     {
         var segment = await db.Segments
             .Include(s => s.Rules)
