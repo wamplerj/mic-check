@@ -22,7 +22,8 @@ public class OrganizationsController(OrganizationService organizationService, We
         if (userId is null) return Unauthorized();
 
         var all = await organizationService.ListForUserAsync(userId.Value, ct);
-        var paged = all.Skip((page - 1) * pageSize).Take(pageSize).Select(OrganizationResponse.From).ToList();
+        var paged = all.Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => OrganizationResponse.From(x.Org, x.IsPrimary)).ToList();
 
         return Ok(new PaginatedResponse<OrganizationResponse>(all.Count, null, null, paged));
     }
@@ -55,6 +56,23 @@ public class OrganizationsController(OrganizationService organizationService, We
 
         var updated = await organizationService.UpdateAsync(id, request.Name, ct);
         return Ok(OrganizationResponse.From(updated));
+    }
+
+    [HttpPut("{id}/primary")]
+    public async Task<IActionResult> SetPrimary(int id, CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        try
+        {
+            await organizationService.SetPrimaryAsync(id, userId.Value, ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpDelete("{id}")]

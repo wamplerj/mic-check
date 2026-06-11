@@ -81,3 +81,7 @@ export async function regenerateInviteLink(organizationId: number): Promise<Invi
 export async function acceptInvite(token: string): Promise<void> {
   await apiClient.post(`/v1/organisations/invite/${token}/accept`);
 }
+
+export async function setPrimaryOrganization(id: number): Promise<void> {
+  await apiClient.put(`/v1/organisations/${id}/primary`);
+}

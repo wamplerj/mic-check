@@ -67,7 +67,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useContextStore } from '@/stores/context';
-import { listOrganizations, createOrganization } from '@/api/organizations';
+import { listOrganizations, createOrganization, setPrimaryOrganization } from '@/api/organizations';
 import type { OrganizationResponse } from '@/types/api';
 
 const contextStore = useContextStore();
@@ -84,6 +84,7 @@ async function fetchOrganizations(): Promise<void> {
   isLoading.value = true;
   try {
     organizations.value = await listOrganizations();
+    autoSelectOrganization();
   } catch {
     organizations.value = [];
   } finally {
@@ -91,8 +92,35 @@ async function fetchOrganizations(): Promise<void> {
   }
 }
 
-function onOrgSelected(org: OrganizationResponse | null): void {
+function autoSelectOrganization(): void {
+  if (contextStore.currentOrganization) {
+    // Refresh stored org with latest data from API (name may have changed)
+    const fresh = organizations.value.find(o => o.id === contextStore.currentOrganization!.id);
+    if (fresh) contextStore.setOrganization(fresh);
+    return;
+  }
+
+  const primary = organizations.value.find(o => o.isPrimary);
+  if (primary) {
+    contextStore.setOrganization(primary);
+    return;
+  }
+
+  if (organizations.value.length === 1) {
+    contextStore.setOrganization(organizations.value[0]);
+  }
+}
+
+async function onOrgSelected(org: OrganizationResponse | null): Promise<void> {
   contextStore.setOrganization(org);
+  if (org) {
+    try {
+      await setPrimaryOrganization(org.id);
+      organizations.value = organizations.value.map(o => ({ ...o, isPrimary: o.id === org.id }));
+    } catch {
+      // Non-critical — selection is already saved to localStorage
+    }
+  }
 }
 
 function openCreateDialog(): void {

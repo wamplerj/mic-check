@@ -64,6 +64,7 @@ export interface OrganizationResponse {
   id: number;
   name: string;
   createdAt: string;
+  isPrimary: boolean;
 }
 
 export interface CreateOrganizationRequest {

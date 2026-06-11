@@ -7,11 +7,16 @@ namespace MicCheck.Api.Organizations;
 
 public class OrganizationService(MicCheckDbContext db, AuditService auditService)
 {
-    public async Task<IReadOnlyList<Organization>> ListForUserAsync(int userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<(Organization Org, bool IsPrimary)>> ListForUserAsync(int userId, CancellationToken ct = default)
     {
-        return await db.Organizations
-            .Where(o => o.Members.Any(m => m.UserId == userId))
-            .ToListAsync(ct);
+        var rows = await (
+            from org in db.Organizations
+            join member in db.OrganizationUsers on org.Id equals member.OrganizationId
+            where member.UserId == userId
+            select new { org, member.IsPrimary }
+        ).ToListAsync(ct);
+
+        return rows.Select(r => (r.org, r.IsPrimary)).ToList();
     }
 
     public async Task<Organization?> FindByIdAsync(int id, CancellationToken ct = default)
@@ -21,6 +26,8 @@ public class OrganizationService(MicCheckDbContext db, AuditService auditService
 
     public async Task<Organization> CreateAsync(string name, int creatorUserId, CancellationToken ct = default)
     {
+        var hasExistingOrg = await db.OrganizationUsers.AnyAsync(ou => ou.UserId == creatorUserId, ct);
+
         var org = new Organization
         {
             Name = name,
@@ -29,7 +36,8 @@ public class OrganizationService(MicCheckDbContext db, AuditService auditService
         org.Members.Add(new OrganizationUser
         {
             UserId = creatorUserId,
-            Role = OrganizationRole.Admin
+            Role = OrganizationRole.Admin,
+            IsPrimary = !hasExistingOrg
         });
         db.Organizations.Add(org);
         await db.SaveChangesAsync(ct);
@@ -37,6 +45,20 @@ public class OrganizationService(MicCheckDbContext db, AuditService auditService
         await auditService.LogAsync("Organization", org.Id.ToString(), "created", org.Id, ct: ct);
 
         return org;
+    }
+
+    public async Task SetPrimaryAsync(int organizationId, int userId, CancellationToken ct = default)
+    {
+        var member = await db.OrganizationUsers
+            .FirstOrDefaultAsync(ou => ou.OrganizationId == organizationId && ou.UserId == userId, ct)
+            ?? throw new KeyNotFoundException($"User is not a member of organization {organizationId}.");
+
+        await db.OrganizationUsers
+            .Where(ou => ou.UserId == userId && ou.IsPrimary)
+            .ExecuteUpdateAsync(s => s.SetProperty(ou => ou.IsPrimary, false), ct);
+
+        member.IsPrimary = true;
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task<Organization> UpdateAsync(int id, string name, CancellationToken ct = default)
