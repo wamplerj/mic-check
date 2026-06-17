@@ -91,6 +91,7 @@
       v-model="showDetail"
       :identity="selectedIdentity"
       @deleted="onIdentityDeleted"
+      @updated="onIdentityUpdated"
     />
 
     <!-- Create identity dialog -->
@@ -244,6 +245,12 @@ async function onCreateConfirm(): Promise<void> {
 function onCreateDialogClosed(): void {
   newIdentifier.value = '';
   createError.value = null;
+}
+
+function onIdentityUpdated(updated: IdentityResponse): void {
+  const idx = identities.value.findIndex((i) => i.id === updated.id);
+  if (idx >= 0) identities.value[idx] = updated;
+  selectedIdentity.value = updated;
 }
 
 function onIdentityDeleted(identityId: number): void {
