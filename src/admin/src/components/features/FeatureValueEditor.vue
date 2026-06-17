@@ -1,14 +1,24 @@
 <template>
   <div data-testid="feature-value-editor">
     <!-- Type selector -->
-    <v-btn-toggle
-      v-model="detectedMode"
-      density="compact"
-      data-testid="value-mode-toggle"
-    >
-      <v-btn value="text" size="small">Text</v-btn>
-      <v-btn value="json" size="small">JSON</v-btn>
-    </v-btn-toggle>
+    <div class="d-flex mb-3" data-testid="value-mode-toggle">
+      <v-btn
+        size="small"
+        :variant="detectedMode === 'text' ? 'flat' : 'outlined'"
+        color="primary"
+        rounded="0"
+        style="border-radius: 4px 0 0 4px"
+        @click="detectedMode = 'text'"
+      >Text</v-btn>
+      <v-btn
+        size="small"
+        :variant="detectedMode === 'json' ? 'flat' : 'outlined'"
+        color="primary"
+        rounded="0"
+        style="border-radius: 0 4px 4px 0; margin-left: -1px"
+        @click="detectedMode = 'json'"
+      >JSON</v-btn>
+    </div>
 
     <!-- JSON mode -->
     <v-textarea
@@ -83,11 +93,3 @@ const rules = {
 };
 </script>
 
-<style scoped>
-/* Materio forces square icon-toggle sizing; override for text-label toggles */
-:deep(.v-btn-toggle .v-btn) {
-  block-size: auto !important;
-  inline-size: auto !important;
-  padding-inline: 16px !important;
-}
-</style>

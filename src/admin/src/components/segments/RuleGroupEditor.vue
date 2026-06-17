@@ -3,18 +3,26 @@
     <!-- AND / OR toggle -->
     <div class="d-flex align-center ga-2 mb-3">
       <span class="text-body-2 font-weight-medium text-medium-emphasis">Match</span>
-      <v-btn-toggle
-        :model-value="rule.type"
-        density="compact"
-        mandatory
-        color="primary"
-        variant="outlined"
-        data-testid="rule-type-toggle"
-        @update:model-value="onTypeChange"
-      >
-        <v-btn value="All" size="small" data-testid="rule-type-and">ALL (AND)</v-btn>
-        <v-btn value="Any" size="small" data-testid="rule-type-or">ANY (OR)</v-btn>
-      </v-btn-toggle>
+      <div class="d-flex" data-testid="rule-type-toggle">
+        <v-btn
+          size="small"
+          :variant="rule.type === 'All' ? 'flat' : 'outlined'"
+          color="primary"
+          rounded="0"
+          style="border-radius: 4px 0 0 4px"
+          data-testid="rule-type-and"
+          @click="onTypeChange('All')"
+        >ALL (AND)</v-btn>
+        <v-btn
+          size="small"
+          :variant="rule.type === 'Any' ? 'flat' : 'outlined'"
+          color="primary"
+          rounded="0"
+          style="border-radius: 0 4px 4px 0; margin-left: -1px"
+          data-testid="rule-type-or"
+          @click="onTypeChange('Any')"
+        >ANY (OR)</v-btn>
+      </div>
       <v-spacer />
       <v-btn
         v-if="removable"

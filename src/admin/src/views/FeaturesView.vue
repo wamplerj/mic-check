@@ -53,7 +53,26 @@
           <!-- Name + description -->
           <template #item.name="{ item }: { item: FeatureResponse }">
             <div>
-              <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+              <div class="d-flex align-center ga-1">
+                <span class="text-subtitle-1 font-weight-bold">{{ item.name }}</span>
+                <v-tooltip
+                  v-if="(featureSegmentsMap.get(item.id) ?? []).length > 0"
+                  text="Has segment overrides"
+                  location="top"
+                >
+                  <template #activator="{ props: tooltipProps }">
+                    <v-btn
+                      v-bind="tooltipProps"
+                      icon="ri-donut-chart-fill"
+                      size="small"
+                      variant="text"
+                      color="secondary"
+                      :data-testid="`segment-override-icon-${item.id}`"
+                      @click.stop="openDetailOnSegments(item)"
+                    />
+                  </template>
+                </v-tooltip>
+              </div>
               <p v-if="item.description" class="text-caption text-medium-emphasis mb-0">
                 {{ item.description }}
               </p>
@@ -158,6 +177,7 @@
       v-model="showDetail"
       :feature="selectedFeature"
       :feature-state="selectedFeatureState"
+      :initial-tab="detailInitialTab"
       @updated="onFeatureUpdated"
       @deleted="onFeatureDeleted"
       @state-updated="onStateUpdated"
@@ -236,6 +256,7 @@ function showError(message: string): void {
 const showDialog = ref(false);
 const showDetail = ref(false);
 const selectedFeature = ref<FeatureResponse | null>(null);
+const detailInitialTab = ref('value');
 
 // Delete dialog state
 const showDeleteDialog = ref(false);
@@ -333,6 +354,13 @@ function openCreateDialog(): void {
 }
 
 function onRowClick(_event: Event, { item }: { item: FeatureResponse }): void {
+  detailInitialTab.value = 'value';
+  selectedFeature.value = item;
+  showDetail.value = true;
+}
+
+function openDetailOnSegments(item: FeatureResponse): void {
+  detailInitialTab.value = 'segments';
   selectedFeature.value = item;
   showDetail.value = true;
 }

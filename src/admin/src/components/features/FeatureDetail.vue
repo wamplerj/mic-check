@@ -319,6 +319,7 @@ interface Props {
   modelValue: boolean;
   feature: FeatureResponse | null;
   featureState: FeatureStateResponse | null;
+  initialTab?: string;
 }
 
 const props = defineProps<Props>();
@@ -472,7 +473,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      activeTab.value = 'value';
+      activeTab.value = props.initialTab ?? 'value';
       valueErrorMessage.value = null;
       settingsErrorMessage.value = null;
       segmentsErrorMessage.value = null;
