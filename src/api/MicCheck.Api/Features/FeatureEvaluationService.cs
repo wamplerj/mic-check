@@ -8,7 +8,8 @@ namespace MicCheck.Api.Features;
 public class FeatureEvaluationService(
     MicCheckDbContext db,
     SegmentEvaluator segmentEvaluator,
-    FlagCache flagCache)
+    FlagCache flagCache,
+    FeatureUsageMetrics usageMetrics)
 {
     public async Task<IReadOnlyList<FeatureStateResult>> EvaluateForEnvironmentAsync(
         int environmentId, CancellationToken ct = default)
@@ -32,6 +33,10 @@ public class FeatureEvaluationService(
         ).ToListAsync(ct);
 
         flagCache.Set(environmentId, results);
+
+        foreach (var r in results)
+            usageMetrics.RecordEvaluation(environmentId, r.Feature.Id, r.Feature.Name);
+
         return results;
     }
 
@@ -133,6 +138,9 @@ public class FeatureEvaluationService(
                 });
             }
         }
+
+        foreach (var r in results)
+            usageMetrics.RecordEvaluation(environmentId, r.Feature.Id, r.Feature.Name);
 
         return results;
     }

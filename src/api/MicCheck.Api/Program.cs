@@ -109,6 +109,7 @@ try
     });
 
     builder.Services.AddMemoryCache();
+    builder.Services.AddMetrics();
 
     builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<AuthService>();
@@ -138,6 +139,9 @@ try
     builder.Services.AddSingleton<WebhookQueue>();
     builder.Services.AddHostedService<WebhookBackgroundService>();
     builder.Services.AddHostedService<WebhookRetryBackgroundService>();
+    builder.Services.AddSingleton<FeatureUsageMetrics>();
+    builder.Services.AddScoped<FeatureUsageQueryService>();
+    builder.Services.AddHostedService<FeatureUsageFlushBackgroundService>();
     builder.Services.AddHttpClient("Webhooks", client =>
         client.DefaultRequestHeaders.Add("User-Agent", "MicCheck-Webhook/1.0"));
 

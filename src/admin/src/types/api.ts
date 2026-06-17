@@ -476,6 +476,25 @@ export interface FlagResponse {
   featureStateValue: string | null;
 }
 
+// ─── Feature Usage ─────────────────────────────────────────────────────────────
+
+export interface TopFeatureUsage {
+  featureId: number;
+  featureName: string;
+  count: number;
+}
+
+export interface DailyUsage {
+  date: string;
+  totalCount: number;
+  features: TopFeatureUsage[];
+}
+
+export interface DashboardUsageResponse {
+  topFeaturesLastDay: TopFeatureUsage[];
+  dailyUsage: DailyUsage[];
+}
+
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
 export interface ApiValidationError {

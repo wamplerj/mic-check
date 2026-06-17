@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import VueApexCharts from 'vue3-apexcharts';
 import App from './App.vue';
 
 // Styles
@@ -15,6 +16,7 @@ const pinia = createPinia();
 
 app.use(pinia);
 app.use(router);
+app.use(VueApexCharts);
 installVuetify(app);
 
 // Restore persisted auth and context state before the first route navigation

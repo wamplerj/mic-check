@@ -14,10 +14,12 @@
     "@iconify-json/ri": "^1.2.0",
     "@iconify/vue": "^4.1.0",
     "@vueuse/core": "^11.0.0",
+    "apexcharts": "^5.15.0",
     "axios": "^1.15.0",
     "pinia": "^3.0.4",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0",
+    "vue3-apexcharts": "^1.11.1",
     "vue3-perfect-scrollbar": "^2.0.0",
     "vuetify": "^3.7.5"
   },

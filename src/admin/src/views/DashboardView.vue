@@ -71,6 +71,61 @@
       </v-col>
     </v-row>
 
+    <!-- Usage charts (requires environment) -->
+    <template v-if="contextStore.currentEnvironment">
+      <v-row class="mb-4">
+        <!-- Top 10 features last day -->
+        <v-col cols="12" md="6">
+          <v-card rounded="lg" data-testid="top-features-chart-card">
+            <v-card-item class="pb-0">
+              <v-card-title class="text-body-1 font-weight-medium">Top Features (Last Day)</v-card-title>
+              <v-card-subtitle class="text-caption">Most evaluated flags in the last 24 hours</v-card-subtitle>
+            </v-card-item>
+            <v-card-text class="pt-2">
+              <div v-if="isLoadingUsage" class="d-flex align-center justify-center" style="height:280px">
+                <v-progress-circular indeterminate color="primary" />
+              </div>
+              <div v-else-if="usageError" class="d-flex align-center justify-center text-medium-emphasis" style="height:280px">
+                <span class="text-caption">Failed to load usage data</span>
+              </div>
+              <div v-else-if="!usageData || usageData.topFeaturesLastDay.length === 0" class="d-flex align-center justify-center text-medium-emphasis" style="height:280px">
+                <div class="text-center">
+                  <v-icon size="36" color="medium-emphasis" class="mb-2">ri-bar-chart-line</v-icon>
+                  <p class="text-caption">No evaluations recorded yet</p>
+                </div>
+              </div>
+              <TopFeaturesChart v-else :data="usageData.topFeaturesLastDay" />
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <!-- Usage by day -->
+        <v-col cols="12" md="6">
+          <v-card rounded="lg" data-testid="daily-usage-chart-card">
+            <v-card-item class="pb-0">
+              <v-card-title class="text-body-1 font-weight-medium">Evaluations by Day</v-card-title>
+              <v-card-subtitle class="text-caption">Hover a bar to see per-flag counts · Last 14 days</v-card-subtitle>
+            </v-card-item>
+            <v-card-text class="pt-2">
+              <div v-if="isLoadingUsage" class="d-flex align-center justify-center" style="height:280px">
+                <v-progress-circular indeterminate color="primary" />
+              </div>
+              <div v-else-if="usageError" class="d-flex align-center justify-center text-medium-emphasis" style="height:280px">
+                <span class="text-caption">Failed to load usage data</span>
+              </div>
+              <div v-else-if="!usageData || usageData.dailyUsage.length === 0" class="d-flex align-center justify-center text-medium-emphasis" style="height:280px">
+                <div class="text-center">
+                  <v-icon size="36" color="medium-emphasis" class="mb-2">ri-bar-chart-2-line</v-icon>
+                  <p class="text-caption">No evaluations recorded yet</p>
+                </div>
+              </div>
+              <DailyUsageChart v-else :data="usageData.dailyUsage" />
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </template>
+
     <!-- Quick-nav cards -->
     <v-row v-if="contextStore.currentProject">
       <v-col
@@ -124,9 +179,37 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import { useContextStore } from '@/stores/context';
+import { getUsageDashboard } from '@/api/usage';
+import TopFeaturesChart from '@/components/dashboard/TopFeaturesChart.vue';
+import DailyUsageChart from '@/components/dashboard/DailyUsageChart.vue';
+import type { DashboardUsageResponse } from '@/types/api';
 
 const contextStore = useContextStore();
+
+const usageData = ref<DashboardUsageResponse | null>(null);
+const isLoadingUsage = ref(false);
+const usageError = ref(false);
+
+async function loadUsage(): Promise<void> {
+  const envId = contextStore.currentEnvironment?.id;
+  if (!envId) {
+    usageData.value = null;
+    return;
+  }
+  isLoadingUsage.value = true;
+  usageError.value = false;
+  try {
+    usageData.value = await getUsageDashboard(envId);
+  } catch {
+    usageError.value = true;
+  } finally {
+    isLoadingUsage.value = false;
+  }
+}
+
+watch(() => contextStore.currentEnvironment, loadUsage, { immediate: true });
 
 const sections = [
   {

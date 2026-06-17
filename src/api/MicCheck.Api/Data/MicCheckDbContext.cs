@@ -37,6 +37,7 @@ public class MicCheckDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserProjectPermission> UserProjectPermissions => Set<UserProjectPermission>();
+    public DbSet<FeatureUsageDaily> FeatureUsageDaily => Set<FeatureUsageDaily>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(MicCheckDbContext).Assembly);
