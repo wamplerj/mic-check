@@ -73,7 +73,7 @@
                   </template>
                 </v-tooltip>
                 <v-chip
-                  v-for="tag in item.tags.slice(0, 5)"
+                  v-for="tag in (item.tags ?? []).slice(0, 5)"
                   :key="tag.id"
                   size="x-small"
                   variant="flat"
@@ -83,9 +83,9 @@
                   {{ tag.label }}
                 </v-chip>
                 <span
-                  v-if="item.tags.length > 5"
+                  v-if="(item.tags ?? []).length > 5"
                   class="text-caption text-medium-emphasis"
-                  :title="`${item.tags.length - 5} more`"
+                  :title="`${(item.tags ?? []).length - 5} more`"
                 >…</span>
               </div>
               <p v-if="item.description" class="text-caption text-medium-emphasis mb-0">
