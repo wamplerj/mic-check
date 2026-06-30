@@ -95,7 +95,7 @@
               <v-divider class="my-5" />
 
               <!-- Tags -->
-              <TagsChipInput />
+              <TagsChipInput v-if="feature" :feature="feature" @updated="onTagsUpdated" />
             </template>
           </v-tabs-window-item>
 
@@ -556,6 +556,10 @@ async function onSaveSettings(): Promise<void> {
   } finally {
     isSavingSettings.value = false;
   }
+}
+
+function onTagsUpdated(updated: FeatureResponse): void {
+  emit('updated', updated);
 }
 
 async function onDelete(): Promise<void> {

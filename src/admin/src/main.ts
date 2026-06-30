@@ -4,6 +4,7 @@ import VueApexCharts from 'vue3-apexcharts';
 import App from './App.vue';
 
 // Styles
+import '@fontsource-variable/inter';
 import '@core/scss/template/index.scss';
 import '@layouts/styles/index.scss';
 import router from './router';

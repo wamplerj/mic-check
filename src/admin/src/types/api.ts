@@ -215,6 +215,7 @@ export interface FeatureResponse {
   defaultEnabled: boolean;
   projectId: number;
   createdAt: string;
+  tags: TagResponse[];
 }
 
 export interface CreateFeatureRequest {

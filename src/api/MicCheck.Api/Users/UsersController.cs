@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace MicCheck.Api.Users;
 
 [ApiController]
-[Route("api/v1/users")]
+[Route("api/v1/user")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class UsersController(UserService userService) : ControllerBase

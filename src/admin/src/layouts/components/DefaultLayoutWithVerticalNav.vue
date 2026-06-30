@@ -3,6 +3,7 @@ import NavItems from '@/layouts/components/NavItems.vue';
 import Footer from '@/layouts/components/Footer.vue';
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue';
 import UserProfile from '@/layouts/components/UserProfile.vue';
+import OrgHeaderSwitcher from '@/components/nav/OrgHeaderSwitcher.vue';
 import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue';
 </script>
 
@@ -16,6 +17,7 @@ import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue';
 
         <VSpacer />
 
+        <OrgHeaderSwitcher class="me-4" />
         <NavbarThemeSwitcher class="me-1" />
         <UserProfile />
       </div>

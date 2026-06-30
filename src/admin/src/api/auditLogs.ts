@@ -17,7 +17,7 @@ export async function listAuditLogsByOrganization(
   filter: AuditLogFilter = {},
 ): Promise<PaginatedResponse<AuditLogResponse>> {
   const { data } = await apiClient.get<PaginatedResponse<AuditLogResponse>>(
-    `/v1/organisations/${orgId}/audit-logs`,
+    `/v1/organisation/${orgId}/audit-logs`,
     { params: toParams(filter) },
   );
   return data;
@@ -28,7 +28,7 @@ export async function listAuditLogsByProject(
   filter: AuditLogFilter = {},
 ): Promise<PaginatedResponse<AuditLogResponse>> {
   const { data } = await apiClient.get<PaginatedResponse<AuditLogResponse>>(
-    `/v1/projects/${projectId}/audit-logs`,
+    `/v1/project/${projectId}/audit-logs`,
     { params: toParams(filter) },
   );
   return data;

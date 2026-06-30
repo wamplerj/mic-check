@@ -15,7 +15,7 @@ export async function listIdentities(
   pageSize = 100,
 ): Promise<PaginatedResponse<IdentityResponse>> {
   const { data } = await apiClient.get<PaginatedResponse<IdentityResponse>>(
-    `/v1/environments/${envApiKey}/identities`,
+    `/v1/environment/${envApiKey}/identities`,
     { params: { page, pageSize } },
   );
   return data;
@@ -26,7 +26,7 @@ export async function createIdentity(
   request: CreateIdentityRequest,
 ): Promise<IdentityResponse> {
   const { data } = await apiClient.post<IdentityResponse>(
-    `/v1/environments/${envApiKey}/identities`,
+    `/v1/environment/${envApiKey}/identities`,
     request,
   );
   return data;
@@ -34,7 +34,7 @@ export async function createIdentity(
 
 export async function getIdentity(envApiKey: string, id: number): Promise<IdentityResponse> {
   const { data } = await apiClient.get<IdentityResponse>(
-    `/v1/environments/${envApiKey}/identities/${id}`,
+    `/v1/environment/${envApiKey}/identity/${id}`,
   );
   return data;
 }
@@ -46,7 +46,7 @@ export async function upsertIdentityTrait(
   request: UpsertTraitRequest,
 ): Promise<TraitResponse> {
   const { data } = await apiClient.put<TraitResponse>(
-    `/v1/environments/${envApiKey}/identities/${identityId}/traits/${encodeURIComponent(key)}`,
+    `/v1/environment/${envApiKey}/identity/${identityId}/trait/${encodeURIComponent(key)}`,
     request,
   );
   return data;
@@ -58,12 +58,12 @@ export async function deleteIdentityTrait(
   key: string,
 ): Promise<void> {
   await apiClient.delete(
-    `/v1/environments/${envApiKey}/identities/${identityId}/traits/${encodeURIComponent(key)}`,
+    `/v1/environment/${envApiKey}/identity/${identityId}/trait/${encodeURIComponent(key)}`,
   );
 }
 
 export async function deleteIdentity(envApiKey: string, id: number): Promise<void> {
-  await apiClient.delete(`/v1/environments/${envApiKey}/identities/${id}`);
+  await apiClient.delete(`/v1/environment/${envApiKey}/identity/${id}`);
 }
 
 export async function getIdentityFeatureStates(
@@ -71,7 +71,7 @@ export async function getIdentityFeatureStates(
   identityId: number,
 ): Promise<FeatureStateResponse[]> {
   const { data } = await apiClient.get<FeatureStateResponse[]>(
-    `/v1/environments/${envApiKey}/identities/${identityId}/featurestates`,
+    `/v1/environment/${envApiKey}/identity/${identityId}/featurestates`,
   );
   return data;
 }
@@ -83,7 +83,7 @@ export async function setIdentityFeatureState(
   request: UpdateFeatureStateRequest,
 ): Promise<FeatureStateResponse> {
   const { data } = await apiClient.put<FeatureStateResponse>(
-    `/v1/environments/${envApiKey}/identities/${identityId}/featurestates/${featureId}`,
+    `/v1/environment/${envApiKey}/identity/${identityId}/featurestate/${featureId}`,
     request,
   );
   return data;
@@ -95,6 +95,6 @@ export async function deleteIdentityFeatureState(
   featureId: number,
 ): Promise<void> {
   await apiClient.delete(
-    `/v1/environments/${envApiKey}/identities/${identityId}/featurestates/${featureId}`,
+    `/v1/environment/${envApiKey}/identity/${identityId}/featurestate/${featureId}`,
   );
 }

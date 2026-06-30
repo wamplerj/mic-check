@@ -11,7 +11,7 @@ export async function listFeatureSegments(
   featureId: number,
 ): Promise<FeatureSegmentResponse[]> {
   const { data } = await apiClient.get<FeatureSegmentResponse[]>(
-    `/v1/environments/${envApiKey}/features/${featureId}/segments`,
+    `/v1/environment/${envApiKey}/feature/${featureId}/segments`,
   );
   return data;
 }
@@ -22,7 +22,7 @@ export async function createFeatureSegment(
   request: CreateFeatureSegmentRequest,
 ): Promise<FeatureSegmentResponse> {
   const { data } = await apiClient.post<FeatureSegmentResponse>(
-    `/v1/environments/${envApiKey}/features/${featureId}/segments`,
+    `/v1/environment/${envApiKey}/feature/${featureId}/segments`,
     request,
   );
   return data;
@@ -35,7 +35,7 @@ export async function updateFeatureSegment(
   request: UpdateFeatureSegmentRequest,
 ): Promise<FeatureSegmentResponse> {
   const { data } = await apiClient.put<FeatureSegmentResponse>(
-    `/v1/environments/${envApiKey}/features/${featureId}/segments/${id}`,
+    `/v1/environment/${envApiKey}/feature/${featureId}/segment/${id}`,
     request,
   );
   return data;
@@ -46,7 +46,7 @@ export async function deleteFeatureSegment(
   featureId: number,
   id: number,
 ): Promise<void> {
-  await apiClient.delete(`/v1/environments/${envApiKey}/features/${featureId}/segments/${id}`);
+  await apiClient.delete(`/v1/environment/${envApiKey}/feature/${featureId}/segment/${id}`);
 }
 
 export async function listIdentitySegments(
@@ -54,7 +54,7 @@ export async function listIdentitySegments(
   identityId: number,
 ): Promise<SegmentSummaryResponse[]> {
   const { data } = await apiClient.get<SegmentSummaryResponse[]>(
-    `/v1/environments/${envApiKey}/identities/${identityId}/segments`,
+    `/v1/environment/${envApiKey}/identity/${identityId}/segments`,
   );
   return data;
 }

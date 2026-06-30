@@ -7,7 +7,7 @@ using Microsoft.Extensions.Caching.Memory;
 namespace MicCheck.Api.Features;
 
 [ApiController]
-[Route("api/v1/environments/{environmentId}/usage")]
+[Route("api/v1/environment/{environmentId}/usage")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class FeatureUsageController(FeatureUsageQueryService queryService, IMemoryCache cache) : ControllerBase

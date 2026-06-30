@@ -13,13 +13,14 @@ public class FeatureService(MicCheckDbContext db, AuditService auditService, Web
     public async Task<IReadOnlyList<Feature>> ListByProjectAsync(int projectId, CancellationToken ct = default)
     {
         return await db.Features
+            .Include(f => f.Tags)
             .Where(f => f.ProjectId == projectId)
             .ToListAsync(ct);
     }
 
     public async Task<Feature?> FindByIdAsync(int id, CancellationToken ct = default)
     {
-        return await db.Features.FirstOrDefaultAsync(f => f.Id == id, ct);
+        return await db.Features.Include(f => f.Tags).FirstOrDefaultAsync(f => f.Id == id, ct);
     }
 
     public async Task<Feature> CreateAsync(
@@ -80,7 +81,7 @@ public class FeatureService(MicCheckDbContext db, AuditService auditService, Web
     public async Task<Feature> UpdateAsync(
         int id, string name, string? description, CancellationToken ct = default)
     {
-        var feature = await db.Features.FirstOrDefaultAsync(f => f.Id == id, ct)
+        var feature = await db.Features.Include(f => f.Tags).FirstOrDefaultAsync(f => f.Id == id, ct)
             ?? throw new KeyNotFoundException($"Feature {id} not found.");
 
         var before = new { feature.Name, feature.Description };
@@ -97,6 +98,40 @@ public class FeatureService(MicCheckDbContext db, AuditService auditService, Web
                 before: before,
                 after: new { feature.Name, feature.Description },
                 ct: ct);
+
+        return feature;
+    }
+
+    public async Task<Feature> AssignTagAsync(int featureId, int tagId, CancellationToken ct = default)
+    {
+        var feature = await db.Features.Include(f => f.Tags).FirstOrDefaultAsync(f => f.Id == featureId, ct)
+            ?? throw new KeyNotFoundException($"Feature {featureId} not found.");
+        var tag = await db.Tags.FirstOrDefaultAsync(t => t.Id == tagId, ct)
+            ?? throw new KeyNotFoundException($"Tag {tagId} not found.");
+
+        if (tag.ProjectId != feature.ProjectId)
+            throw new DomainException("Tag does not belong to the feature's project.");
+
+        if (feature.Tags.All(t => t.Id != tagId))
+        {
+            feature.Tags.Add(tag);
+            await db.SaveChangesAsync(ct);
+        }
+
+        return feature;
+    }
+
+    public async Task<Feature> RemoveTagAsync(int featureId, int tagId, CancellationToken ct = default)
+    {
+        var feature = await db.Features.Include(f => f.Tags).FirstOrDefaultAsync(f => f.Id == featureId, ct)
+            ?? throw new KeyNotFoundException($"Feature {featureId} not found.");
+
+        var tag = feature.Tags.FirstOrDefault(t => t.Id == tagId);
+        if (tag is not null)
+        {
+            feature.Tags.Remove(tag);
+            await db.SaveChangesAsync(ct);
+        }
 
         return feature;
     }

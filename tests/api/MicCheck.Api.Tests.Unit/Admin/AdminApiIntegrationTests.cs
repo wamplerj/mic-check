@@ -97,7 +97,7 @@ public class AdminApiIntegrationTests
         db.Projects.Add(project);
         db.SaveChanges();
 
-        var response = await client.PostAsJsonAsync($"/api/v1/projects/{project.Id}/features", new
+        var response = await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/features", new
         {
             name = "dark_mode",
             type = "Standard",
@@ -135,7 +135,7 @@ public class AdminApiIntegrationTests
         });
         db.SaveChanges();
 
-        await client.PostAsJsonAsync($"/api/v1/projects/{project.Id}/features", new
+        await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/features", new
         {
             name = "flag_x",
             type = "Standard",
@@ -220,7 +220,7 @@ public class AdminApiIntegrationTests
         db.Projects.Add(project);
         db.SaveChanges();
 
-        var response = await client.PostAsJsonAsync($"/api/v1/projects/{project.Id}/features", new
+        var response = await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/features", new
         {
             name = "invalid name with spaces!",
             type = "Standard"
@@ -247,7 +247,7 @@ public class AdminApiIntegrationTests
         db.Projects.Add(project);
         db.SaveChanges();
 
-        var response = await client.PostAsJsonAsync($"/api/v1/projects/{project.Id}/segments", new
+        var response = await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/segments", new
         {
             name = "Premium Users",
             rules = new[]

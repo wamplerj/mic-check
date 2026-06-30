@@ -1,7 +1,7 @@
 <template>
   <div data-testid="tags-chip-input">
     <div class="d-flex align-center justify-space-between mb-2">
-      <span class="text-body-2 font-weight-medium">Project Tags</span>
+      <span class="text-body-2 font-weight-medium">Tags</span>
       <v-btn
         size="x-small"
         variant="tonal"
@@ -71,6 +71,8 @@
       </v-card>
     </v-expand-transition>
 
+    <p class="text-caption text-medium-emphasis mb-2">Click a tag to add or remove it from this feature.</p>
+
     <!-- Tag chips -->
     <div v-if="isLoading" class="d-flex justify-center py-3">
       <v-progress-circular indeterminate size="20" width="2" color="primary" />
@@ -82,8 +84,12 @@
         :key="tag.id"
         size="small"
         closable
+        :variant="isAssigned(tag) ? 'flat' : 'outlined'"
         :color="tag.color"
+        :prepend-icon="isAssigned(tag) ? 'ri-check-line' : undefined"
+        :loading="togglingTagId === tag.id"
         :data-testid="`tag-chip-${tag.label}`"
+        @click="onToggleTag(tag)"
         @click:close="onDeleteTag(tag)"
       >
         {{ tag.label }}
@@ -103,20 +109,36 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue';
 import { listTags, createTag, deleteTag } from '@/api/tags';
+import { assignFeatureTag, removeFeatureTag } from '@/api/features';
 import { useContextStore } from '@/stores/context';
-import type { TagResponse } from '@/types/api';
+import type { TagResponse, FeatureResponse } from '@/types/api';
+
+interface Props {
+  feature: FeatureResponse;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+  updated: [feature: FeatureResponse];
+}>();
 
 const contextStore = useContextStore();
 
 const tags = ref<TagResponse[]>([]);
 const isLoading = ref(false);
 const isCreating = ref(false);
+const togglingTagId = ref<number | null>(null);
 const showCreateForm = ref(false);
 const newTagLabel = ref('');
 const newTagColor = ref('#1565C0');
 const errorMessage = ref<string | null>(null);
 const createFormRef = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null);
 const tagLabelInputRef = ref<{ focus: () => void } | null>(null);
+
+function isAssigned(tag: TagResponse): boolean {
+  return props.feature.tags.some((t) => t.id === tag.id);
+}
 
 function focusTagLabel(): void {
   nextTick(() => tagLabelInputRef.value?.focus());
@@ -167,6 +189,24 @@ async function onCreateTag(): Promise<void> {
     errorMessage.value = 'Failed to create tag. Please try again.';
   } finally {
     isCreating.value = false;
+  }
+}
+
+async function onToggleTag(tag: TagResponse): Promise<void> {
+  const projectId = contextStore.currentProject?.id;
+  if (!projectId) return;
+
+  togglingTagId.value = tag.id;
+  errorMessage.value = null;
+  try {
+    const updated = isAssigned(tag)
+      ? await removeFeatureTag(projectId, props.feature.id, tag.id)
+      : await assignFeatureTag(projectId, props.feature.id, tag.id);
+    emit('updated', updated);
+  } catch {
+    errorMessage.value = 'Failed to update tag assignment. Please try again.';
+  } finally {
+    togglingTagId.value = null;
   }
 }
 

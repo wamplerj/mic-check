@@ -7,14 +7,14 @@ import type {
 
 export async function listFeatureStates(envApiKey: string): Promise<FeatureStateResponse[]> {
   const { data } = await apiClient.get<FeatureStateResponse[]>(
-    `/v1/environments/${envApiKey}/featurestates`,
+    `/v1/environment/${envApiKey}/featurestates`,
   );
   return data;
 }
 
 export async function getFeatureState(envApiKey: string, id: number): Promise<FeatureStateResponse> {
   const { data } = await apiClient.get<FeatureStateResponse>(
-    `/v1/environments/${envApiKey}/featurestates/${id}`,
+    `/v1/environment/${envApiKey}/featurestate/${id}`,
   );
   return data;
 }
@@ -25,7 +25,7 @@ export async function updateFeatureState(
   request: UpdateFeatureStateRequest,
 ): Promise<FeatureStateResponse> {
   const { data } = await apiClient.put<FeatureStateResponse>(
-    `/v1/environments/${envApiKey}/featurestates/${id}`,
+    `/v1/environment/${envApiKey}/featurestate/${id}`,
     request,
   );
   return data;
@@ -37,7 +37,7 @@ export async function patchFeatureState(
   request: PatchFeatureStateRequest,
 ): Promise<FeatureStateResponse> {
   const { data } = await apiClient.patch<FeatureStateResponse>(
-    `/v1/environments/${envApiKey}/featurestates/${id}`,
+    `/v1/environment/${envApiKey}/featurestate/${id}`,
     request,
   );
   return data;

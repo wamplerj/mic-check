@@ -8,7 +8,7 @@ import type {
 
 export async function listSegments(projectId: number, page = 1, pageSize = 100): Promise<SegmentResponse[]> {
   const { data } = await apiClient.get<PaginatedResponse<SegmentResponse>>(
-    `/v1/projects/${projectId}/segments`,
+    `/v1/project/${projectId}/segments`,
     { params: { page, pageSize } },
   );
   return data.results;
@@ -16,7 +16,7 @@ export async function listSegments(projectId: number, page = 1, pageSize = 100):
 
 export async function getSegment(projectId: number, id: number): Promise<SegmentResponse> {
   const { data } = await apiClient.get<SegmentResponse>(
-    `/v1/projects/${projectId}/segments/${id}`,
+    `/v1/project/${projectId}/segment/${id}`,
   );
   return data;
 }
@@ -26,7 +26,7 @@ export async function createSegment(
   request: CreateSegmentRequest,
 ): Promise<SegmentResponse> {
   const { data } = await apiClient.post<SegmentResponse>(
-    `/v1/projects/${projectId}/segments`,
+    `/v1/project/${projectId}/segments`,
     request,
   );
   return data;
@@ -38,12 +38,12 @@ export async function updateSegment(
   request: UpdateSegmentRequest,
 ): Promise<SegmentResponse> {
   const { data } = await apiClient.put<SegmentResponse>(
-    `/v1/projects/${projectId}/segments/${id}`,
+    `/v1/project/${projectId}/segment/${id}`,
     request,
   );
   return data;
 }
 
 export async function deleteSegment(projectId: number, id: number): Promise<void> {
-  await apiClient.delete(`/v1/projects/${projectId}/segments/${id}`);
+  await apiClient.delete(`/v1/project/${projectId}/segment/${id}`);
 }

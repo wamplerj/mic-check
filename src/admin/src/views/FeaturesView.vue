@@ -53,7 +53,7 @@
           <!-- Name + description -->
           <template #item.name="{ item }: { item: FeatureResponse }">
             <div>
-              <div class="d-flex align-center ga-1">
+              <div class="d-flex flex-wrap align-center ga-1">
                 <span class="text-subtitle-1 font-weight-bold">{{ item.name }}</span>
                 <v-tooltip
                   v-if="(featureSegmentsMap.get(item.id) ?? []).length > 0"
@@ -72,6 +72,21 @@
                     />
                   </template>
                 </v-tooltip>
+                <v-chip
+                  v-for="tag in item.tags.slice(0, 5)"
+                  :key="tag.id"
+                  size="x-small"
+                  variant="flat"
+                  :color="tag.color"
+                  :data-testid="`feature-tag-chip-${item.id}-${tag.id}`"
+                >
+                  {{ tag.label }}
+                </v-chip>
+                <span
+                  v-if="item.tags.length > 5"
+                  class="text-caption text-medium-emphasis"
+                  :title="`${item.tags.length - 5} more`"
+                >…</span>
               </div>
               <p v-if="item.description" class="text-caption text-medium-emphasis mb-0">
                 {{ item.description }}

@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace MicCheck.Api.Organizations;
 
 [ApiController]
-[Route("api/v1/organisations")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class OrganizationsController(OrganizationService organizationService, WebhookService webhookService) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("api/v1/organisations")]
     public async Task<ActionResult<PaginatedResponse<OrganizationResponse>>> List(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
@@ -28,7 +27,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(new PaginatedResponse<OrganizationResponse>(all.Count, null, null, paged));
     }
 
-    [HttpPost]
+    [HttpPost("api/v1/organisations")]
     public async Task<ActionResult<OrganizationResponse>> Create(
         CreateOrganizationRequest request, CancellationToken ct)
     {
@@ -39,7 +38,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return CreatedAtAction(nameof(GetById), new { id = org.Id }, OrganizationResponse.From(org));
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("api/v1/organisation/{id}")]
     public async Task<ActionResult<OrganizationResponse>> GetById(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -47,7 +46,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(OrganizationResponse.From(org));
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("api/v1/organisation/{id}")]
     public async Task<ActionResult<OrganizationResponse>> Update(
         int id, UpdateOrganizationRequest request, CancellationToken ct)
     {
@@ -58,7 +57,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(OrganizationResponse.From(updated));
     }
 
-    [HttpPut("{id}/primary")]
+    [HttpPut("api/v1/organisation/{id}/primary")]
     public async Task<IActionResult> SetPrimary(int id, CancellationToken ct)
     {
         var userId = GetCurrentUserId();
@@ -75,7 +74,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("api/v1/organisation/{id}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -85,7 +84,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return NoContent();
     }
 
-    [HttpGet("{id}/users")]
+    [HttpGet("api/v1/organisation/{id}/users")]
     public async Task<ActionResult<IReadOnlyList<OrganizationMemberResponse>>> ListUsers(
         int id, CancellationToken ct)
     {
@@ -96,7 +95,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(members.Select(OrganizationMemberResponse.From).ToList());
     }
 
-    [HttpPost("{id}/users/invite")]
+    [HttpPost("api/v1/organisation/{id}/users/invite")]
     public async Task<IActionResult> InviteUser(int id, InviteUserRequest request, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -107,7 +106,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok();
     }
 
-    [HttpPost("{id}/users/invite-by-email")]
+    [HttpPost("api/v1/organisation/{id}/users/invite-by-email")]
     public async Task<ActionResult<IReadOnlyList<InviteByEmailResult>>> InviteUsersByEmail(
         int id, InviteUsersByEmailRequest request, CancellationToken ct)
     {
@@ -118,7 +117,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(results);
     }
 
-    [HttpGet("{id}/invite-link")]
+    [HttpGet("api/v1/organisation/{id}/invite-link")]
     public async Task<ActionResult<InviteTokenResponse>> GetInviteLink(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -128,7 +127,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(new InviteTokenResponse(token));
     }
 
-    [HttpPost("{id}/invite-link/regenerate")]
+    [HttpPost("api/v1/organisation/{id}/invite-link/regenerate")]
     public async Task<ActionResult<InviteTokenResponse>> RegenerateInviteLink(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -138,7 +137,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(new InviteTokenResponse(token));
     }
 
-    [HttpPost("invite/{token}/accept")]
+    [HttpPost("api/v1/organisations/invite/{token}/accept")]
     public async Task<IActionResult> AcceptInvite(string token, CancellationToken ct)
     {
         var userId = GetCurrentUserId();
@@ -155,7 +154,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         }
     }
 
-    [HttpDelete("{id}/users/{userId}")]
+    [HttpDelete("api/v1/organisation/{id}/user/{userId}")]
     public async Task<IActionResult> RemoveUser(int id, int userId, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -165,7 +164,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return NoContent();
     }
 
-    [HttpGet("{id}/webhooks")]
+    [HttpGet("api/v1/organisation/{id}/webhooks")]
     public async Task<ActionResult<IReadOnlyList<WebhookResponse>>> ListWebhooks(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -175,7 +174,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(webhooks.Select(WebhookResponse.From).ToList());
     }
 
-    [HttpPost("{id}/webhooks")]
+    [HttpPost("api/v1/organisation/{id}/webhooks")]
     public async Task<ActionResult<WebhookResponse>> CreateWebhook(
         int id, CreateWebhookRequest request, CancellationToken ct)
     {
@@ -186,7 +185,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return CreatedAtAction(nameof(ListWebhooks), new { id }, WebhookResponse.From(webhook));
     }
 
-    [HttpPut("{id}/webhooks/{webhookId}")]
+    [HttpPut("api/v1/organisation/{id}/webhook/{webhookId}")]
     public async Task<ActionResult<WebhookResponse>> UpdateWebhook(
         int id, int webhookId, CreateWebhookRequest request, CancellationToken ct)
     {
@@ -200,7 +199,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(WebhookResponse.From(updated));
     }
 
-    [HttpDelete("{id}/webhooks/{webhookId}")]
+    [HttpDelete("api/v1/organisation/{id}/webhook/{webhookId}")]
     public async Task<IActionResult> DeleteWebhook(int id, int webhookId, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);

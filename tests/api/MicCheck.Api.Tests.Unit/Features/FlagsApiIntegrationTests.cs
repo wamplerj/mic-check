@@ -115,7 +115,7 @@ public class FlagsApiIntegrationTests
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Environment-Key", _envApiKey);
 
-        var response = await client.PostAsJsonAsync("/api/v1/identities/", new
+        var response = await client.PostAsJsonAsync("/api/v1/identity/", new
         {
             identifier = "user-123",
             traits = new[] { new { trait_key = "plan", trait_value = "premium" } }

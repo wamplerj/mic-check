@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import VerticalNavLink from '@layouts/components/VerticalNavLink.vue';
 import VerticalNavSectionTitle from '@layouts/components/VerticalNavSectionTitle.vue';
-import OrgSelector from '@/components/nav/OrgSelector.vue';
 import ProjectSelector from '@/components/nav/ProjectSelector.vue';
 import EnvironmentTabBar from '@/components/nav/EnvironmentTabBar.vue';
 </script>
@@ -15,7 +14,6 @@ import EnvironmentTabBar from '@/components/nav/EnvironmentTabBar.vue';
 
   <VerticalNavSectionTitle :item="{ heading: 'Context' }" />
   <div class="nav-context-selectors px-4 d-flex flex-column ga-3">
-    <OrgSelector />
     <ProjectSelector />
     <EnvironmentTabBar />
   </div>
