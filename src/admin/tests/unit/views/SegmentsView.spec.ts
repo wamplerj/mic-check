@@ -61,7 +61,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue(mockSegments);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       mountView();
@@ -74,7 +74,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue(mockSegments);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -88,7 +88,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue(mockSegments);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -104,7 +104,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue([]);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -123,7 +123,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue(mockSegments);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -143,7 +143,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.deleteSegment).mockResolvedValue(undefined);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -172,7 +172,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.deleteSegment).mockResolvedValue(undefined);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -196,7 +196,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue([]);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -214,7 +214,7 @@ describe('SegmentsView', () => {
       jest.mocked(segmentsApi.listSegments).mockResolvedValue([...mockSegments]);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();

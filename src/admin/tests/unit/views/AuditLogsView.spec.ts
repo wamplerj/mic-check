@@ -23,12 +23,12 @@ const mockLogs: AuditLogResponse[] = [
   {
     id: 1, resourceType: 'Feature', resourceId: '42', action: 'Created',
     changes: null, organizationId: 1, projectId: 10, environmentId: null,
-    actorUserId: 5, createdAt: '2026-01-10T10:00:00Z',
+    actorUserId: 5, actorUserName: 'Alice', createdAt: '2026-01-10T10:00:00Z',
   },
   {
     id: 2, resourceType: 'FeatureState', resourceId: '99', action: 'Updated',
     changes: '{"enabled":true}', organizationId: 1, projectId: 10, environmentId: 100,
-    actorUserId: 5, createdAt: '2026-01-11T11:00:00Z',
+    actorUserId: 5, actorUserName: 'Alice', createdAt: '2026-01-11T11:00:00Z',
   },
 ];
 
@@ -58,7 +58,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       mountView();
@@ -76,7 +76,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -95,7 +95,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -120,7 +120,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -145,7 +145,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -170,7 +170,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -195,7 +195,7 @@ describe('AuditLogsView', () => {
       });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();

@@ -13,7 +13,7 @@
       :disabled="isLoading || !contextStore.currentOrganization"
       :placeholder="contextStore.currentOrganization ? 'Select a project' : 'Select an organization first'"
       no-data-text="No projects found"
-      prepend-inner-icon="mdi-folder-outline"
+      prepend-inner-icon="ri-folder-line"
       data-testid="project-select"
       @update:model-value="onProjectSelected"
     />
@@ -22,7 +22,7 @@
       size="x-small"
       variant="text"
       color="primary"
-      prepend-icon="mdi-plus"
+      prepend-icon="ri-add-line"
       class="mt-1 px-1"
       :disabled="!contextStore.currentOrganization"
       data-testid="create-project-btn"
@@ -86,8 +86,24 @@ async function fetchProjects(organizationId: number): Promise<void> {
   isLoading.value = true;
   try {
     projects.value = await listProjects(organizationId);
+    autoSelectProject();
   } finally {
     isLoading.value = false;
+  }
+}
+
+function autoSelectProject(): void {
+  if (contextStore.currentProject) {
+    const fresh = projects.value.find(p => p.id === contextStore.currentProject!.id);
+    if (fresh) {
+      contextStore.refreshProject(fresh);
+      return;
+    }
+    contextStore.setProject(null);
+    return;
+  }
+  if (projects.value.length === 1) {
+    contextStore.setProject(projects.value[0]);
   }
 }
 
@@ -124,12 +140,11 @@ async function onCreateConfirm(): Promise<void> {
 }
 
 watch(
-  () => contextStore.currentOrganization,
-  (org) => {
+  () => contextStore.currentOrganization?.id,
+  (orgId, oldOrgId) => {
+    if (orgId === oldOrgId) return;
     projects.value = [];
-    if (org) {
-      fetchProjects(org.id);
-    }
+    if (orgId) fetchProjects(orgId);
   },
   { immediate: true },
 );

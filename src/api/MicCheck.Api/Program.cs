@@ -2,10 +2,10 @@ using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Audit;
-using MicCheck.Api.Authentication;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authentication;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Data;
 using MicCheck.Api.Environments;
 using MicCheck.Api.Features;
@@ -33,6 +33,8 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    builder.AddServiceDefaults();
 
     builder.Host.UseSerilog((context, services, config) =>
         config.ReadFrom.Configuration(context.Configuration)
@@ -107,6 +109,7 @@ try
     });
 
     builder.Services.AddMemoryCache();
+    builder.Services.AddMetrics();
 
     builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<AuthService>();
@@ -132,27 +135,27 @@ try
     builder.Services.AddScoped<WebhookService>();
     builder.Services.AddScoped<WebhookDispatcher>();
     builder.Services.AddScoped<AdminIdentityService>();
+    builder.Services.AddScoped<UserService>();
     builder.Services.AddSingleton<WebhookQueue>();
     builder.Services.AddHostedService<WebhookBackgroundService>();
     builder.Services.AddHostedService<WebhookRetryBackgroundService>();
+    builder.Services.AddSingleton<FeatureUsageMetrics>();
+    builder.Services.AddScoped<FeatureUsageQueryService>();
+    builder.Services.AddHostedService<FeatureUsageFlushBackgroundService>();
     builder.Services.AddHttpClient("Webhooks", client =>
         client.DefaultRequestHeaders.Add("User-Agent", "MicCheck-Webhook/1.0"));
 
-    var connectionString = System.Environment.GetEnvironmentVariable("DATABASE_URL") is { } databaseUrl
-        ? DatabaseUrlParser.ToNpgsqlConnectionString(databaseUrl)
-        : builder.Configuration.GetConnectionString("DefaultConnection")!;
+    var connectionString = builder.Configuration.GetConnectionString("miccheck")
+        ?? (System.Environment.GetEnvironmentVariable("DATABASE_URL") is { } databaseUrl
+            ? DatabaseUrlParser.ToNpgsqlConnectionString(databaseUrl)
+            : builder.Configuration.GetConnectionString("DefaultConnection")!);
 
     builder.Services.AddDbContext<MicCheckDbContext>(options =>
         options.UseNpgsql(connectionString));
 
     var app = builder.Build();
 
-    // Apply any pending EF Core migrations on startup (safe to run on every boot)
-    using (var migrationScope = app.Services.CreateScope())
-    {
-        var db = migrationScope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        await db.Database.MigrateAsync();
-    }
+    await app.ApplyMigrationsAsync();
 
     if (app.Environment.IsDevelopment())
     {
@@ -160,9 +163,7 @@ try
         app.MapScalarApiReference();
         app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 
-        using var scope = app.Services.CreateScope();
-        var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-        await seeder.SeedAsync();
+        await app.SeedDevelopmentDataAsync();
     }
 
     app.UseSerilogRequestLogging();
@@ -170,6 +171,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    app.MapDefaultEndpoints();
     app.MapControllers();
     app.MapAuthEndpoints();
     app.MapApiKeyEndpoints();

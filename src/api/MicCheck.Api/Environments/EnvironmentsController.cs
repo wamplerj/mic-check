@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using MicCheck.Api.Webhooks;
 using Microsoft.AspNetCore.Authorization;
@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace MicCheck.Api.Environments;
 
 [ApiController]
-[Route("api/v1/environments")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class EnvironmentsController(EnvironmentService environmentService, WebhookService webhookService) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("api/v1/environments")]
     public async Task<ActionResult<PaginatedResponse<EnvironmentResponse>>> List(
         [FromQuery] int projectId,
         [FromQuery] int page = 1,
@@ -26,14 +25,14 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(new PaginatedResponse<EnvironmentResponse>(all.Count, null, null, paged));
     }
 
-    [HttpPost]
+    [HttpPost("api/v1/environments")]
     public async Task<ActionResult<EnvironmentResponse>> Create(CreateEnvironmentRequest request, CancellationToken ct)
     {
         var environment = await environmentService.CreateAsync(request.ProjectId, request.Name, ct);
         return CreatedAtAction(nameof(GetByApiKey), new { apiKey = environment.ApiKey }, EnvironmentResponse.From(environment));
     }
 
-    [HttpGet("{apiKey}")]
+    [HttpGet("api/v1/environment/{apiKey}")]
     public async Task<ActionResult<EnvironmentResponse>> GetByApiKey(string apiKey, CancellationToken ct)
     {
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
@@ -41,7 +40,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(EnvironmentResponse.From(environment));
     }
 
-    [HttpPut("{apiKey}")]
+    [HttpPut("api/v1/environment/{apiKey}")]
     public async Task<ActionResult<EnvironmentResponse>> Update(string apiKey, UpdateEnvironmentRequest request, CancellationToken ct)
     {
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
@@ -51,7 +50,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(EnvironmentResponse.From(updated));
     }
 
-    [HttpDelete("{apiKey}")]
+    [HttpDelete("api/v1/environment/{apiKey}")]
     public async Task<IActionResult> Delete(string apiKey, CancellationToken ct)
     {
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
@@ -61,7 +60,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return NoContent();
     }
 
-    [HttpPost("{apiKey}/clone")]
+    [HttpPost("api/v1/environment/{apiKey}/clone")]
     public async Task<ActionResult<EnvironmentResponse>> Clone(string apiKey, CloneEnvironmentRequest request, CancellationToken ct)
     {
         var source = await environmentService.FindByApiKeyAsync(apiKey, ct);
@@ -71,7 +70,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return CreatedAtAction(nameof(GetByApiKey), new { apiKey = cloned.ApiKey }, EnvironmentResponse.From(cloned));
     }
 
-    [HttpGet("{apiKey}/webhooks")]
+    [HttpGet("api/v1/environment/{apiKey}/webhooks")]
     public async Task<ActionResult<IReadOnlyList<WebhookResponse>>> ListWebhooks(string apiKey, CancellationToken ct)
     {
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
@@ -81,7 +80,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(webhooks.Select(WebhookResponse.From).ToList());
     }
 
-    [HttpPost("{apiKey}/webhooks")]
+    [HttpPost("api/v1/environment/{apiKey}/webhooks")]
     public async Task<ActionResult<WebhookResponse>> CreateWebhook(
         string apiKey, CreateWebhookRequest request, CancellationToken ct)
     {
@@ -92,7 +91,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return CreatedAtAction(nameof(GetByApiKey), new { apiKey }, WebhookResponse.From(webhook));
     }
 
-    [HttpPut("{apiKey}/webhooks/{id}")]
+    [HttpPut("api/v1/environment/{apiKey}/webhook/{id}")]
     public async Task<ActionResult<WebhookResponse>> UpdateWebhook(
         string apiKey, int id, CreateWebhookRequest request, CancellationToken ct)
     {
@@ -106,7 +105,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(WebhookResponse.From(updated));
     }
 
-    [HttpGet("{apiKey}/webhooks/{id}/deliveries")]
+    [HttpGet("api/v1/environment/{apiKey}/webhook/{id}/deliveries")]
     public async Task<ActionResult<IReadOnlyList<WebhookDeliveryLogResponse>>> ListWebhookDeliveries(
         string apiKey, int id, CancellationToken ct)
     {
@@ -120,7 +119,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(logs.Select(WebhookDeliveryLogResponse.From).ToList());
     }
 
-    [HttpDelete("{apiKey}/webhooks/{id}")]
+    [HttpDelete("api/v1/environment/{apiKey}/webhook/{id}")]
     public async Task<IActionResult> DeleteWebhook(string apiKey, int id, CancellationToken ct)
     {
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
@@ -133,7 +132,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return NoContent();
     }
 
-    [HttpGet("{apiKey}/audit-logs")]
+    [HttpGet("api/v1/environment/{apiKey}/audit-logs")]
     public async Task<ActionResult<IReadOnlyList<Audit.AuditLogResponse>>> ListAuditLogs(
         string apiKey,
         [FromServices] Audit.AuditLogQueryService auditLogQueryService,
@@ -143,10 +142,10 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         if (environment is null) return NotFound();
 
         var (_, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, new Audit.AuditLogFilter(), ct);
-        return Ok(logs.Select(Audit.AuditLogResponse.From).ToList());
+        return Ok(logs.ToList());
     }
 
-    [HttpGet("{apiKey}/identities")]
+    [HttpGet("api/v1/environment/{apiKey}/identities")]
     public async Task<ActionResult<PaginatedResponse<Identities.AdminIdentityResponse>>> ListIdentities(
         string apiKey,
         [FromServices] Identities.AdminIdentityService adminIdentityService,
@@ -163,7 +162,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(new PaginatedResponse<Identities.AdminIdentityResponse>(total, null, null, results));
     }
 
-    [HttpPost("{apiKey}/identities")]
+    [HttpPost("api/v1/environment/{apiKey}/identities")]
     public async Task<ActionResult<Identities.AdminIdentityResponse>> CreateIdentity(
         string apiKey,
         [FromBody] Identities.CreateIdentityRequest request,
@@ -181,7 +180,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
             Identities.AdminIdentityResponse.From(identity));
     }
 
-    [HttpGet("{apiKey}/identities/{id}")]
+    [HttpGet("api/v1/environment/{apiKey}/identity/{id}")]
     public async Task<ActionResult<Identities.AdminIdentityResponse>> GetIdentity(
         string apiKey, int id,
         [FromServices] Identities.AdminIdentityService adminIdentityService,
@@ -195,7 +194,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(Identities.AdminIdentityResponse.From(identity));
     }
 
-    [HttpDelete("{apiKey}/identities/{id}")]
+    [HttpDelete("api/v1/environment/{apiKey}/identity/{id}")]
     public async Task<IActionResult> DeleteIdentity(
         string apiKey, int id,
         [FromServices] Identities.AdminIdentityService adminIdentityService,
@@ -211,7 +210,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return NoContent();
     }
 
-    [HttpPut("{apiKey}/identities/{id}/traits/{key}")]
+    [HttpPut("api/v1/environment/{apiKey}/identity/{id}/trait/{key}")]
     public async Task<ActionResult<Identities.TraitResponse>> UpsertIdentityTrait(
         string apiKey, int id, string key,
         [FromBody] Identities.UpsertTraitRequest request,
@@ -226,7 +225,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(result);
     }
 
-    [HttpDelete("{apiKey}/identities/{id}/traits/{key}")]
+    [HttpDelete("api/v1/environment/{apiKey}/identity/{id}/trait/{key}")]
     public async Task<IActionResult> DeleteIdentityTrait(
         string apiKey, int id, string key,
         [FromServices] Identities.AdminIdentityService adminIdentityService,
@@ -240,7 +239,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return NoContent();
     }
 
-    [HttpGet("{apiKey}/identities/{id}/featurestates")]
+    [HttpGet("api/v1/environment/{apiKey}/identity/{id}/featurestates")]
     public async Task<ActionResult<IReadOnlyList<Features.FeatureStateResponse>>> GetIdentityFeatureStates(
         string apiKey, int id,
         [FromServices] Identities.AdminIdentityService adminIdentityService,
@@ -256,7 +255,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(states.Select(Features.FeatureStateResponse.From).ToList());
     }
 
-    [HttpPut("{apiKey}/identities/{id}/featurestates/{featureId}")]
+    [HttpPut("api/v1/environment/{apiKey}/identity/{id}/featurestate/{featureId}")]
     public async Task<ActionResult<Features.FeatureStateResponse>> SetIdentityFeatureState(
         string apiKey, int id, int featureId,
         Features.UpdateFeatureStateRequest request,
@@ -273,7 +272,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(Features.FeatureStateResponse.From(state));
     }
 
-    [HttpDelete("{apiKey}/identities/{id}/featurestates/{featureId}")]
+    [HttpDelete("api/v1/environment/{apiKey}/identity/{id}/featurestate/{featureId}")]
     public async Task<IActionResult> DeleteIdentityFeatureState(
         string apiKey, int id, int featureId,
         [FromServices] Identities.AdminIdentityService adminIdentityService,
@@ -289,7 +288,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return NoContent();
     }
 
-    [HttpGet("{apiKey}/featurestates")]
+    [HttpGet("api/v1/environment/{apiKey}/featurestates")]
     public async Task<ActionResult<IReadOnlyList<Features.FeatureStateResponse>>> ListFeatureStates(
         string apiKey,
         [FromServices] Features.FeatureStateService featureStateService,
@@ -302,7 +301,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(states.Select(Features.FeatureStateResponse.From).ToList());
     }
 
-    [HttpGet("{apiKey}/featurestates/{id}")]
+    [HttpGet("api/v1/environment/{apiKey}/featurestate/{id}")]
     public async Task<ActionResult<Features.FeatureStateResponse>> GetFeatureState(
         string apiKey, int id,
         [FromServices] Features.FeatureStateService featureStateService,
@@ -316,7 +315,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(Features.FeatureStateResponse.From(state));
     }
 
-    [HttpPut("{apiKey}/featurestates/{id}")]
+    [HttpPut("api/v1/environment/{apiKey}/featurestate/{id}")]
     public async Task<ActionResult<Features.FeatureStateResponse>> UpdateFeatureState(
         string apiKey, int id,
         Features.UpdateFeatureStateRequest request,
@@ -333,7 +332,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(Features.FeatureStateResponse.From(updated));
     }
 
-    [HttpPatch("{apiKey}/featurestates/{id}")]
+    [HttpPatch("api/v1/environment/{apiKey}/featurestate/{id}")]
     public async Task<ActionResult<Features.FeatureStateResponse>> PatchFeatureState(
         string apiKey, int id,
         Features.PatchFeatureStateRequest request,
@@ -352,7 +351,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
 
     // ─── Feature Segments ────────────────────────────────────────────────────
 
-    [HttpGet("{apiKey}/features/{featureId}/segments")]
+    [HttpGet("api/v1/environment/{apiKey}/feature/{featureId}/segments")]
     public async Task<ActionResult<IReadOnlyList<Features.FeatureSegmentResponse>>> ListFeatureSegments(
         string apiKey, int featureId,
         [FromServices] Features.FeatureSegmentService featureSegmentService,
@@ -365,7 +364,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(results);
     }
 
-    [HttpPost("{apiKey}/features/{featureId}/segments")]
+    [HttpPost("api/v1/environment/{apiKey}/feature/{featureId}/segments")]
     public async Task<ActionResult<Features.FeatureSegmentResponse>> CreateFeatureSegment(
         string apiKey, int featureId,
         Features.CreateFeatureSegmentRequest request,
@@ -388,7 +387,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         }
     }
 
-    [HttpPut("{apiKey}/features/{featureId}/segments/{id}")]
+    [HttpPut("api/v1/environment/{apiKey}/feature/{featureId}/segment/{id}")]
     public async Task<ActionResult<Features.FeatureSegmentResponse>> UpdateFeatureSegment(
         string apiKey, int featureId, int id,
         Features.UpdateFeatureSegmentRequest request,
@@ -403,7 +402,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         return Ok(result);
     }
 
-    [HttpDelete("{apiKey}/features/{featureId}/segments/{id}")]
+    [HttpDelete("api/v1/environment/{apiKey}/feature/{featureId}/segment/{id}")]
     public async Task<IActionResult> DeleteFeatureSegment(
         string apiKey, int featureId, int id,
         [FromServices] Features.FeatureSegmentService featureSegmentService,
@@ -418,7 +417,7 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
 
     // ─── Identity Segments ───────────────────────────────────────────────────
 
-    [HttpGet("{apiKey}/identities/{id}/segments")]
+    [HttpGet("api/v1/environment/{apiKey}/identity/{id}/segments")]
     public async Task<ActionResult<IReadOnlyList<Segments.SegmentSummaryResponse>>> GetIdentitySegments(
         string apiKey, int id,
         [FromServices] Identities.AdminIdentityService adminIdentityService,

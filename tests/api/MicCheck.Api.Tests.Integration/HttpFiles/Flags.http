@@ -1,0 +1,4 @@
+### GetFlags
+GET {{baseUrl}}/api/v1/flags
+X-Environment-Key: {{environmentKey}}
+Accept: application/json

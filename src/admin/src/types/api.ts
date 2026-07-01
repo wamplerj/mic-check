@@ -1,3 +1,25 @@
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+export interface UserProfileResponse {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface LoginRequest {
@@ -42,6 +64,7 @@ export interface OrganizationResponse {
   id: number;
   name: string;
   createdAt: string;
+  isPrimary: boolean;
 }
 
 export interface CreateOrganizationRequest {
@@ -64,6 +87,25 @@ export interface OrganizationMemberResponse {
 export interface InviteUserRequest {
   userId: number;
   role: 'Admin' | 'User';
+}
+
+export interface InviteByEmailEntry {
+  email: string;
+  role: 'Admin' | 'User';
+}
+
+export interface InviteUsersByEmailRequest {
+  invites: InviteByEmailEntry[];
+}
+
+export interface InviteByEmailResult {
+  email: string;
+  success: boolean;
+  error: string | null;
+}
+
+export interface InviteTokenResponse {
+  token: string;
 }
 
 // ─── API Keys ─────────────────────────────────────────────────────────────────
@@ -173,6 +215,7 @@ export interface FeatureResponse {
   defaultEnabled: boolean;
   projectId: number;
   createdAt: string;
+  tags: TagResponse[];
 }
 
 export interface CreateFeatureRequest {
@@ -327,6 +370,7 @@ export interface AuditLogResponse {
   projectId: number | null;
   environmentId: number | null;
   actorUserId: number | null;
+  actorUserName: string | null;
   createdAt: string;
 }
 
@@ -431,6 +475,25 @@ export interface FlagResponse {
   feature: FlagFeatureInfo;
   enabled: boolean;
   featureStateValue: string | null;
+}
+
+// ─── Feature Usage ─────────────────────────────────────────────────────────────
+
+export interface TopFeatureUsage {
+  featureId: number;
+  featureName: string;
+  count: number;
+}
+
+export interface DailyUsage {
+  date: string;
+  totalCount: number;
+  features: TopFeatureUsage[];
+}
+
+export interface DashboardUsageResponse {
+  topFeaturesLastDay: TopFeatureUsage[];
+  dailyUsage: DailyUsage[];
 }
 
 // ─── Errors ───────────────────────────────────────────────────────────────────

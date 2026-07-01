@@ -10,10 +10,11 @@ public record AuditLogResponse(
     int? ProjectId,
     int? EnvironmentId,
     int? ActorUserId,
+    string? ActorUserName,
     DateTimeOffset CreatedAt
 )
 {
-    public static AuditLogResponse From(AuditLog log) => new(
+    public static AuditLogResponse From(AuditLog log, string? actorUserName = null) => new(
         log.Id,
         log.ResourceType,
         log.ResourceId,
@@ -23,5 +24,6 @@ public record AuditLogResponse(
         log.ProjectId,
         log.EnvironmentId,
         log.ActorUserId,
+        actorUserName,
         log.CreatedAt);
 }

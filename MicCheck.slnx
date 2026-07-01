@@ -1,8 +1,22 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="CLAUDE.md" />
+    <File Path="docker-compose.yml" />
+    <File Path="readme.md" />
+  </Folder>
   <Folder Name="/src/">
+    <Project Path="src/admin/Admin.esproj">
+      <Build />
+      <Deploy />
+    </Project>
     <Project Path="src/api/MicCheck.Api/MicCheck.Api.csproj" />
+    <Project Path="src/MicCheck.AppHost/MicCheck.AppHost.csproj" />
+    <Project Path="src/MicCheck.ServiceDefaults/MicCheck.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/api/MicCheck.Api.Tests.Unit/MicCheck.Api.Tests.Unit.csproj" />
+    <Project Path="tests/api/MicCheck.Api.Tests.Integration/MicCheck.Api.Tests.Integration.csproj" />
   </Folder>
 </Solution>

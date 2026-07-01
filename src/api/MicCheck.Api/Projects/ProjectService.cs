@@ -1,5 +1,5 @@
 using MicCheck.Api.Audit;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Data;
 using Microsoft.EntityFrameworkCore;
 

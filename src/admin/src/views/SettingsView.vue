@@ -54,9 +54,44 @@
 
           <!-- Org members -->
           <v-card rounded="lg" class="mb-4">
-            <v-card-title class="text-body-1 font-weight-medium pa-4 pb-2">Members</v-card-title>
+            <v-card-title class="d-flex align-center justify-space-between pa-4 pb-2">
+              <span class="text-body-1 font-weight-medium">Members</span>
+              <v-btn
+                size="small"
+                color="primary"
+                variant="tonal"
+                prepend-icon="ri-user-add-line"
+                data-testid="add-member-btn"
+                @click="openAddMemberDialog"
+              >
+                Add Member
+              </v-btn>
+            </v-card-title>
             <v-card-text class="pa-4 pt-0">
-              <v-table v-if="orgMembers.length > 0" density="compact" class="mb-3" data-testid="members-table">
+              <!-- Invite link -->
+              <div class="d-flex align-center ga-2 mb-4">
+                <v-text-field
+                  :model-value="inviteLink"
+                  label="Invite link"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  readonly
+                  :loading="isLoadingInviteLink"
+                  data-testid="invite-link-input"
+                />
+                <v-btn
+                  :icon="inviteLinkCopied ? 'ri-check-line' : 'ri-file-copy-line'"
+                  :color="inviteLinkCopied ? 'success' : undefined"
+                  variant="text"
+                  size="small"
+                  :loading="isRegeneratingLink"
+                  data-testid="copy-invite-link-btn"
+                  @click="onCopyInviteLink"
+                />
+              </div>
+
+              <v-table v-if="orgMembers.length > 0" density="compact" data-testid="members-table">
                 <thead>
                   <tr>
                     <th>First Name</th>
@@ -75,48 +110,13 @@
                     <td><v-chip size="x-small" :color="member.role === 'Admin' ? 'primary' : 'default'" variant="tonal">{{ member.role }}</v-chip></td>
                     <td class="text-caption text-medium-emphasis">{{ member.lastLoginAt ? formatDate(member.lastLoginAt) : '—' }}</td>
                     <td>
-                      <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
-                        :data-testid="`remove-member-${member.userId}`" @click="onRemoveMember(member.userId)" />
+                      <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error"
+                        :data-testid="`remove-member-${member.userId}`" @click="openConfirm('member', member.userId, `${member.firstName} ${member.lastName}`)" />
                     </td>
                   </tr>
                 </tbody>
               </v-table>
-              <p v-else class="text-body-2 text-medium-emphasis mb-3" data-testid="no-members-message">No members found.</p>
-
-              <!-- Invite form -->
-              <div class="d-flex align-center ga-2 flex-wrap">
-                <v-text-field
-                  v-model="inviteUserId"
-                  label="User ID"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  type="number"
-                  style="max-width: 120px"
-                  data-testid="invite-user-id-input"
-                />
-                <v-select
-                  v-model="inviteRole"
-                  :items="['Admin', 'User']"
-                  label="Role"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  style="max-width: 120px"
-                  data-testid="invite-role-select"
-                />
-                <v-btn
-                  color="primary"
-                  variant="tonal"
-                  size="small"
-                  :disabled="!inviteUserId"
-                  :loading="isInviting"
-                  data-testid="invite-member-btn"
-                  @click="onInviteMember"
-                >
-                  Invite
-                </v-btn>
-              </div>
+              <p v-else class="text-body-2 text-medium-emphasis" data-testid="no-members-message">No members found.</p>
             </v-card-text>
           </v-card>
 
@@ -212,8 +212,8 @@
                       </div>
                     </td>
                     <td>
-                      <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
-                        :data-testid="`remove-permission-${perm.userId}`" @click="onRemovePermission(perm.userId)" />
+                      <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error"
+                        :data-testid="`remove-permission-${perm.userId}`" @click="openConfirm('permission', perm.userId, `User ${perm.userId}`)" />
                     </td>
                   </tr>
                 </tbody>
@@ -225,7 +225,7 @@
                 size="small"
                 color="primary"
                 variant="tonal"
-                prepend-icon="mdi-plus"
+                prepend-icon="ri-add-line"
                 data-testid="add-permission-btn"
                 @click="showAddPermission = !showAddPermission"
               >
@@ -337,9 +337,9 @@
                       <v-chip size="x-small" variant="tonal" color="secondary">{{ env.apiKey }}</v-chip>
                     </div>
                     <div class="d-flex ga-1 mr-2" @click.stop>
-                      <v-btn icon="mdi-content-copy" size="x-small" variant="text" :data-testid="`clone-env-${env.id}`" @click.stop="openCloneDialog(env)" />
-                      <v-btn icon="mdi-pencil-outline" size="x-small" variant="text" :data-testid="`rename-env-${env.id}`" @click.stop="openRenameDialog(env)" />
-                      <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error" :data-testid="`delete-env-${env.id}`" @click.stop="openDeleteEnvConfirm(env)" />
+                      <v-btn icon="ri-file-copy-line" size="x-small" variant="text" :data-testid="`clone-env-${env.id}`" @click.stop="openCloneDialog(env)" />
+                      <v-btn icon="ri-edit-line" size="x-small" variant="text" :data-testid="`rename-env-${env.id}`" @click.stop="openRenameDialog(env)" />
+                      <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error" :data-testid="`delete-env-${env.id}`" @click.stop="openDeleteEnvConfirm(env)" />
                     </div>
                   </v-expansion-panel-title>
                   <v-expansion-panel-text>
@@ -361,7 +361,7 @@
               size="small"
               color="primary"
               variant="tonal"
-              prepend-icon="mdi-plus"
+              prepend-icon="ri-add-line"
               data-testid="create-api-key-btn"
               @click="showApiKeyDialog = true"
             >
@@ -394,8 +394,8 @@
                   </td>
                   <td class="text-caption text-medium-emphasis">{{ key.expiresAt ? formatDate(key.expiresAt) : 'Never' }}</td>
                   <td>
-                    <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error"
-                      :data-testid="`delete-api-key-${key.id}`" @click="onDeleteApiKey(key.id)" />
+                    <v-btn icon="ri-delete-bin-line" size="x-small" variant="text" color="error"
+                      :data-testid="`delete-api-key-${key.id}`" @click="openConfirm('apiKey', key.id, key.name)" />
                   </td>
                 </tr>
               </tbody>
@@ -404,6 +404,23 @@
         </v-tabs-window-item>
       </v-tabs-window>
     </template>
+
+    <!-- Generic confirmation dialog (member / permission / api key) -->
+    <v-dialog v-model="showConfirmDialog" max-width="400" persistent>
+      <v-card rounded="lg" data-testid="confirm-delete-dialog">
+        <v-card-title class="text-body-1 font-weight-bold pa-4 pb-2">Confirm Delete</v-card-title>
+        <v-card-text class="pa-4 pt-0">
+          <p class="text-body-2">
+            Delete <strong>{{ confirmLabel }}</strong>? This cannot be undone.
+          </p>
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn variant="text" :disabled="isConfirmDeleting" @click="closeConfirm">Cancel</v-btn>
+          <v-btn color="error" variant="flat" :loading="isConfirmDeleting" data-testid="confirm-delete-btn" @click="onConfirmDelete">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Clone environment dialog -->
     <v-dialog v-model="showCloneDialog" max-width="400">
@@ -451,25 +468,16 @@
     </v-dialog>
 
     <!-- Delete environment dialog -->
-    <v-dialog v-model="showDeleteEnvDialog" max-width="400">
+    <v-dialog v-model="showDeleteEnvDialog" max-width="400" persistent>
       <v-card rounded="lg" data-testid="delete-env-dialog">
         <v-card-title class="text-body-1 font-weight-bold pa-4 pb-2">Delete Environment</v-card-title>
         <v-card-text class="pa-4 pt-0">
-          <p class="text-body-2 mb-2">Delete <strong>{{ deletingEnv?.name }}</strong>? This cannot be undone.</p>
-          <p class="text-body-2 mb-2">Type <strong>{{ deletingEnv?.name }}</strong> to confirm:</p>
-          <v-text-field
-            v-model="deleteEnvConfirmName"
-            variant="outlined"
-            density="compact"
-            hide-details
-            :placeholder="deletingEnv?.name"
-            data-testid="delete-env-confirm-input"
-          />
+          <p class="text-body-2">Delete <strong>{{ deletingEnv?.name }}</strong>? This cannot be undone.</p>
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
-          <v-btn variant="text" @click="showDeleteEnvDialog = false">Cancel</v-btn>
-          <v-btn color="error" variant="flat" :disabled="deleteEnvConfirmName !== deletingEnv?.name" :loading="isDeletingEnv" data-testid="confirm-delete-env-btn" @click="onDeleteEnvironment">Delete</v-btn>
+          <v-btn variant="text" :disabled="isDeletingEnv" @click="showDeleteEnvDialog = false">Cancel</v-btn>
+          <v-btn color="error" variant="flat" :loading="isDeletingEnv" data-testid="confirm-delete-env-btn" @click="onDeleteEnvironment">Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -506,11 +514,93 @@
       </v-card>
     </v-dialog>
 
+    <!-- Add Member dialog -->
+    <v-dialog v-model="showAddMemberDialog" max-width="520" persistent>
+      <v-card rounded="lg" data-testid="add-member-dialog">
+        <v-card-title class="text-body-1 font-weight-bold pa-4 pb-2">Add Members</v-card-title>
+        <v-card-text class="pa-4 pt-0">
+          <div
+            v-for="(entry, i) in addMemberEntries"
+            :key="i"
+            class="d-flex align-start ga-2 mb-2"
+          >
+            <v-text-field
+              v-model="entry.email"
+              label="Email"
+              variant="outlined"
+              density="compact"
+              :rules="[validateEmail]"
+              :data-testid="`add-member-email-${i}`"
+            />
+            <v-select
+              v-model="entry.role"
+              :items="['User', 'Admin']"
+              label="Role"
+              variant="outlined"
+              density="compact"
+              hide-details
+              style="max-width: 120px"
+              :data-testid="`add-member-role-${i}`"
+            />
+            <v-btn
+              v-if="addMemberEntries.length > 1"
+              icon="ri-close-line"
+              size="x-small"
+              variant="text"
+              @click="removeMemberRow(i)"
+            />
+          </div>
+
+          <v-btn
+            size="small"
+            variant="text"
+            prepend-icon="ri-add-line"
+            class="mt-1"
+            data-testid="add-another-member-btn"
+            @click="addMemberRow"
+          >
+            Add another
+          </v-btn>
+
+          <div v-if="addMemberResults.length > 0" class="mt-3">
+            <div
+              v-for="result in addMemberResults"
+              :key="result.email"
+              class="d-flex align-center ga-2 text-body-2 mb-1"
+            >
+              <v-icon :color="result.success ? 'success' : 'error'" size="16">
+                {{ result.success ? 'ri-check-line' : 'ri-error-warning-line' }}
+              </v-icon>
+              <span>{{ result.email }}</span>
+              <span v-if="!result.success" class="text-error">— {{ result.error }}</span>
+            </div>
+          </div>
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn variant="text" :disabled="isAddingMembers" @click="showAddMemberDialog = false">
+            {{ addMemberResults.length > 0 ? 'Close' : 'Cancel' }}
+          </v-btn>
+          <v-btn
+            v-if="addMemberResults.length === 0"
+            color="primary"
+            variant="flat"
+            :loading="isAddingMembers"
+            :disabled="!addMemberEntries.some(e => e.email.trim()) || addMemberEntries.some(e => e.email.trim() && validateEmail(e.email) !== true)"
+            data-testid="confirm-add-members-btn"
+            @click="onAddMembers"
+          >
+            Add
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Raw key reveal dialog (shown once after creation) -->
     <v-dialog v-model="showRawKeyDialog" max-width="480" persistent>
       <v-card rounded="lg" data-testid="raw-key-dialog">
         <v-card-title class="pa-4 pb-2 d-flex align-center ga-2">
-          <v-icon color="warning">mdi-alert</v-icon>
+          <v-icon color="warning">ri-alert-line</v-icon>
           <span class="text-body-1 font-weight-bold">Save your API key</span>
         </v-card-title>
         <v-card-text class="pa-4 pt-0">
@@ -521,7 +611,7 @@
             density="compact"
             readonly
             hide-details
-            :append-inner-icon="rawKeyCopied ? 'mdi-check' : 'mdi-content-copy'"
+            :append-inner-icon="rawKeyCopied ? 'ri-check-line' : 'ri-file-copy-line'"
             data-testid="raw-key-field"
             @click:append-inner="copyRawKey"
           />
@@ -538,17 +628,49 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { updateOrganization, listOrganizationMembers, inviteOrganizationMember, removeOrganizationMember } from '@/api/organizations';
+import { updateOrganization, listOrganizationMembers, removeOrganizationMember, inviteOrganizationMembersByEmail, getInviteLink, regenerateInviteLink } from '@/api/organizations';
 import { updateProject, listProjectUserPermissions, setProjectUserPermissions, updateProjectUserPermissions, removeProjectUserPermissions } from '@/api/projects';
 import { listEnvironments, createEnvironment, updateEnvironment, deleteEnvironment, cloneEnvironment } from '@/api/environments';
 import { listApiKeys, createApiKey, deleteApiKey } from '@/api/apiKeys';
 import { useContextStore } from '@/stores/context';
 import WebhooksPanel from '@/components/settings/WebhooksPanel.vue';
-import type { OrganizationMemberResponse, UserPermissionResponse, EnvironmentResponse, ApiKeyResponse, ProjectPermission } from '@/types/api';
+import type { OrganizationMemberResponse, UserPermissionResponse, EnvironmentResponse, ApiKeyResponse, ProjectPermission, InviteByEmailResult } from '@/types/api';
+import { validateEmail } from '@/utils/validation';
 
 const contextStore = useContextStore();
 
 const activeTab = ref('organization');
+
+// ── Shared confirm dialog ─────────────────────────────────────────────────────
+type ConfirmType = 'member' | 'permission' | 'apiKey';
+const showConfirmDialog = ref(false);
+const confirmType = ref<ConfirmType>('member');
+const confirmId = ref(0);
+const confirmLabel = ref('');
+const isConfirmDeleting = ref(false);
+
+function openConfirm(type: ConfirmType, id: number, label: string): void {
+  confirmType.value = type;
+  confirmId.value = id;
+  confirmLabel.value = label;
+  showConfirmDialog.value = true;
+}
+
+function closeConfirm(): void {
+  showConfirmDialog.value = false;
+}
+
+async function onConfirmDelete(): Promise<void> {
+  isConfirmDeleting.value = true;
+  try {
+    if (confirmType.value === 'member') await onRemoveMember(confirmId.value);
+    else if (confirmType.value === 'permission') await onRemovePermission(confirmId.value);
+    else if (confirmType.value === 'apiKey') await onDeleteApiKey(confirmId.value);
+    closeConfirm();
+  } finally {
+    isConfirmDeleting.value = false;
+  }
+}
 
 // ── Organization ──────────────────────────────────────────────────────────────
 const orgNameInput = ref('');
@@ -556,13 +678,28 @@ const isSavingOrg = ref(false);
 const orgError = ref<string | null>(null);
 const orgSuccess = ref<string | null>(null);
 const orgMembers = ref<OrganizationMemberResponse[]>([]);
-const inviteUserId = ref('');
-const inviteRole = ref<'Admin' | 'User'>('User');
-const isInviting = ref(false);
+
+// Invite link
+const inviteLink = ref('');
+const isLoadingInviteLink = ref(false);
+const isRegeneratingLink = ref(false);
+const inviteLinkCopied = ref(false);
+
+// Add member dialog
+interface AddMemberEntry { email: string; role: 'Admin' | 'User' }
+const showAddMemberDialog = ref(false);
+const addMemberEntries = ref<AddMemberEntry[]>([{ email: '', role: 'User' }]);
+const isAddingMembers = ref(false);
+const addMemberResults = ref<InviteByEmailResult[]>([]);
 
 watch(() => contextStore.currentOrganization, (org) => {
   orgNameInput.value = org?.name ?? '';
-  if (org) loadOrgMembers();
+  if (org) {
+    loadOrgMembers();
+    loadInviteLink();
+  } else {
+    inviteLink.value = '';
+  }
 }, { immediate: true });
 
 async function loadOrgMembers(): Promise<void> {
@@ -591,19 +728,69 @@ async function onSaveOrgName(): Promise<void> {
   }
 }
 
-async function onInviteMember(): Promise<void> {
+async function loadInviteLink(): Promise<void> {
   const orgId = contextStore.currentOrganization?.id;
-  if (!orgId || !inviteUserId.value) return;
-  isInviting.value = true;
-  orgError.value = null;
+  if (!orgId) return;
+  isLoadingInviteLink.value = true;
   try {
-    await inviteOrganizationMember(orgId, { userId: Number(inviteUserId.value), role: inviteRole.value });
-    inviteUserId.value = '';
+    const { token } = await getInviteLink(orgId);
+    inviteLink.value = `${window.location.origin}/accept-invite/${token}`;
+  } catch {
+    // non-critical
+  } finally {
+    isLoadingInviteLink.value = false;
+  }
+}
+
+async function onCopyInviteLink(): Promise<void> {
+  const orgId = contextStore.currentOrganization?.id;
+  if (!orgId) return;
+  try {
+    await navigator.clipboard.writeText(inviteLink.value);
+    inviteLinkCopied.value = true;
+    setTimeout(() => { inviteLinkCopied.value = false; }, 2000);
+  } catch {
+    // clipboard unavailable
+  }
+  isRegeneratingLink.value = true;
+  try {
+    const { token } = await regenerateInviteLink(orgId);
+    inviteLink.value = `${window.location.origin}/accept-invite/${token}`;
+  } catch {
+    // non-critical
+  } finally {
+    isRegeneratingLink.value = false;
+  }
+}
+
+function openAddMemberDialog(): void {
+  addMemberEntries.value = [{ email: '', role: 'User' }];
+  addMemberResults.value = [];
+  showAddMemberDialog.value = true;
+}
+
+function addMemberRow(): void {
+  addMemberEntries.value.push({ email: '', role: 'User' });
+}
+
+function removeMemberRow(index: number): void {
+  addMemberEntries.value.splice(index, 1);
+}
+
+async function onAddMembers(): Promise<void> {
+  const orgId = contextStore.currentOrganization?.id;
+  if (!orgId) return;
+  const valid = addMemberEntries.value.filter((e) => e.email.trim());
+  if (!valid.length) return;
+  isAddingMembers.value = true;
+  addMemberResults.value = [];
+  try {
+    addMemberResults.value = await inviteOrganizationMembersByEmail(orgId, { invites: valid });
     await loadOrgMembers();
   } catch {
-    orgError.value = 'Failed to invite member.';
+    orgError.value = 'Failed to add members.';
   } finally {
-    isInviting.value = false;
+    isAddingMembers.value = false;
   }
 }
 
@@ -751,7 +938,6 @@ const isRenaming = ref(false);
 
 const showDeleteEnvDialog = ref(false);
 const deletingEnv = ref<EnvironmentResponse | null>(null);
-const deleteEnvConfirmName = ref('');
 const isDeletingEnv = ref(false);
 
 watch(() => contextStore.currentProject, (project) => {
@@ -800,7 +986,6 @@ function openRenameDialog(env: EnvironmentResponse): void {
 
 function openDeleteEnvConfirm(env: EnvironmentResponse): void {
   deletingEnv.value = env;
-  deleteEnvConfirmName.value = '';
   showDeleteEnvDialog.value = true;
 }
 
@@ -836,7 +1021,7 @@ async function onRenameEnvironment(): Promise<void> {
 }
 
 async function onDeleteEnvironment(): Promise<void> {
-  if (!deletingEnv.value || deleteEnvConfirmName.value !== deletingEnv.value.name) return;
+  if (!deletingEnv.value) return;
   isDeletingEnv.value = true;
   envError.value = null;
   try {
@@ -939,6 +1124,7 @@ onMounted(() => {
     orgNameInput.value = contextStore.currentOrganization.name;
     loadOrgMembers();
     loadApiKeys();
+    loadInviteLink();
   }
   if (contextStore.currentProject) {
     projectNameInput.value = contextStore.currentProject.name;

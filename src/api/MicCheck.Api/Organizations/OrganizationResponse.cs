@@ -3,11 +3,12 @@ namespace MicCheck.Api.Organizations;
 public record OrganizationResponse(
     int Id,
     string Name,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    bool IsPrimary
 )
 {
-    public static OrganizationResponse From(Organization org) => new(
-        org.Id, org.Name, org.CreatedAt);
+    public static OrganizationResponse From(Organization org, bool isPrimary = false) => new(
+        org.Id, org.Name, org.CreatedAt, isPrimary);
 }
 
 public record OrganizationMemberResponse(

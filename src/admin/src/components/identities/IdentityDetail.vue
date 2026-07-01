@@ -12,7 +12,7 @@
           <p class="text-h6 mb-0">{{ identity.identifier }}</p>
           <p class="text-caption text-medium-emphasis mb-0">ID: {{ identity.id }}</p>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('update:modelValue', false)" />
+        <v-btn icon="ri-close-line" variant="text" size="small" @click="$emit('update:modelValue', false)" />
       </v-card-title>
 
       <v-tabs v-model="activeTab" color="primary" class="px-4">
@@ -66,7 +66,7 @@
                   </td>
                   <td>
                     <v-btn
-                      icon="mdi-trash-can-outline"
+                      icon="ri-delete-bin-line"
                       size="x-small"
                       variant="text"
                       color="error"
@@ -195,7 +195,7 @@
                     </td>
                     <td>
                       <v-btn
-                        icon="mdi-trash-can-outline"
+                        icon="ri-delete-bin-line"
                         size="x-small"
                         variant="text"
                         color="error"
@@ -278,7 +278,7 @@
               </p>
 
               <div v-if="identitySegments.length === 0" class="text-center py-6 text-medium-emphasis" data-testid="no-segments-message">
-                <v-icon size="32" class="mb-2">mdi-label-off-outline</v-icon>
+                <v-icon size="32" class="mb-2">ri-price-tag-3-line</v-icon>
                 <p class="text-body-2">This identity does not match any segments.</p>
               </div>
 
@@ -320,6 +320,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   deleted: [identityId: number];
+  updated: [identity: IdentityResponse];
 }>();
 
 const contextStore = useContextStore();
@@ -420,6 +421,10 @@ watch(
   { immediate: true },
 );
 
+watch(activeTab, (tab) => {
+  if (tab === 'segments') loadSegmentsData();
+});
+
 async function onToggleOverride(override: FeatureStateResponse, enabled: boolean | null): Promise<void> {
   if (enabled === null || !props.identity) return;
   const envApiKey = contextStore.currentEnvironment?.apiKey;
@@ -489,6 +494,12 @@ async function onAddOverride(): Promise<void> {
   }
 }
 
+function emitTraitsUpdated(): void {
+  if (props.identity) {
+    emit('updated', { ...props.identity, traits: [...editedTraits.value] });
+  }
+}
+
 async function onSaveTrait(key: string, value: string): Promise<void> {
   if (!props.identity) return;
   const envApiKey = contextStore.currentEnvironment?.apiKey;
@@ -499,6 +510,7 @@ async function onSaveTrait(key: string, value: string): Promise<void> {
     await upsertIdentityTrait(envApiKey, props.identity.id, key, { value });
     const idx = editedTraits.value.findIndex((t: TraitResponse) => t.key === key);
     if (idx >= 0) editedTraits.value[idx] = { key, value };
+    emitTraitsUpdated();
   } catch {
     traitsError.value = 'Failed to save trait. Please try again.';
   } finally {
@@ -515,6 +527,7 @@ async function onDeleteTrait(key: string): Promise<void> {
   try {
     await deleteIdentityTrait(envApiKey, props.identity.id, key);
     editedTraits.value = editedTraits.value.filter((t: TraitResponse) => t.key !== key);
+    emitTraitsUpdated();
   } catch {
     traitsError.value = 'Failed to delete trait. Please try again.';
   } finally {
@@ -540,6 +553,7 @@ async function onAddTrait(): Promise<void> {
     }
     newTraitKey.value = '';
     newTraitValue.value = '';
+    emitTraitsUpdated();
   } catch {
     traitsError.value = 'Failed to add trait. Please try again.';
   } finally {

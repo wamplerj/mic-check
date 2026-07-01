@@ -137,4 +137,63 @@ public class FeatureServiceTests
 
         Assert.That(features, Has.Count.EqualTo(2));
     }
+
+    [Test]
+    public async Task WhenAssigningATag_ThenItAppearsOnTheFeature()
+    {
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+        var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
+        _db.Tags.Add(tag);
+        await _db.SaveChangesAsync();
+
+        var updated = await _service.AssignTagAsync(feature.Id, tag.Id);
+
+        Assert.That(updated.Tags.Select(t => t.Id), Does.Contain(tag.Id));
+    }
+
+    [Test]
+    public async Task WhenAssigningATagAlreadyOnTheFeature_ThenItIsNotDuplicated()
+    {
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+        var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
+        _db.Tags.Add(tag);
+        await _db.SaveChangesAsync();
+
+        await _service.AssignTagAsync(feature.Id, tag.Id);
+        var updated = await _service.AssignTagAsync(feature.Id, tag.Id);
+
+        Assert.That(updated.Tags.Count(t => t.Id == tag.Id), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task WhenAssigningATagFromAnotherProject_ThenDomainExceptionIsThrown()
+    {
+        _db.Projects.Add(new MicCheck.Api.Projects.Project
+        {
+            Id = 2,
+            Name = "Other Project",
+            OrganizationId = OrganizationId,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+        var foreignTag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = 2 };
+        _db.Tags.Add(foreignTag);
+        await _db.SaveChangesAsync();
+
+        Assert.ThrowsAsync<DomainException>(() => _service.AssignTagAsync(feature.Id, foreignTag.Id));
+    }
+
+    [Test]
+    public async Task WhenRemovingAnAssignedTag_ThenItNoLongerAppearsOnTheFeature()
+    {
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+        var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
+        _db.Tags.Add(tag);
+        await _db.SaveChangesAsync();
+        await _service.AssignTagAsync(feature.Id, tag.Id);
+
+        var updated = await _service.RemoveTagAsync(feature.Id, tag.Id);
+
+        Assert.That(updated.Tags.Select(t => t.Id), Does.Not.Contain(tag.Id));
+    }
 }

@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useContextStore } from '@/stores/context';
 import type { OrganizationResponse, ProjectResponse, EnvironmentResponse } from '@/types/api';
 
-const mockOrg: OrganizationResponse = { id: 1, name: 'Acme', createdAt: '2026-01-01T00:00:00Z' };
+const mockOrg: OrganizationResponse = { id: 1, name: 'Acme', createdAt: '2026-01-01T00:00:00Z', isPrimary: false };
 const mockProject: ProjectResponse = {
   id: 10,
   name: 'Website',
@@ -116,6 +116,57 @@ describe('useContextStore', () => {
 
       expect(store.currentOrganization).toBeNull();
       expect(localStorage.getItem('mic_ctx_organization')).toBeNull();
+    });
+  });
+
+  describe('WhenRefreshOrganizationIsCalled', () => {
+    it('ThenOrgIsUpdatedWithoutClearingProjectOrEnvironment', () => {
+      const store = useContextStore();
+      store.setOrganization(mockOrg);
+      store.setProject(mockProject);
+      store.setEnvironment(mockEnv);
+
+      const updatedOrg = { ...mockOrg, name: 'Acme Updated' };
+      store.refreshOrganization(updatedOrg);
+
+      expect(store.currentOrganization).toEqual(updatedOrg);
+      expect(store.currentProject).toEqual(mockProject);
+      expect(store.currentEnvironment).toEqual(mockEnv);
+    });
+
+    it('ThenOrgIsPersistedToLocalStorage', () => {
+      const store = useContextStore();
+      const updatedOrg = { ...mockOrg, name: 'Acme Updated' };
+      store.refreshOrganization(updatedOrg);
+
+      const stored = JSON.parse(localStorage.getItem('mic_ctx_organization')!);
+      expect(stored).toEqual(updatedOrg);
+    });
+  });
+
+  describe('WhenRefreshProjectIsCalled', () => {
+    it('ThenProjectIsUpdatedWithoutClearingEnvironment', () => {
+      const store = useContextStore();
+      store.setProject(mockProject);
+      store.setEnvironment(mockEnv);
+
+      const updatedProject = { ...mockProject, name: 'Website Updated' };
+      store.refreshProject(updatedProject);
+
+      expect(store.currentProject).toEqual(updatedProject);
+      expect(store.currentEnvironment).toEqual(mockEnv);
+    });
+  });
+
+  describe('WhenRefreshEnvironmentIsCalled', () => {
+    it('ThenEnvironmentIsUpdatedAndPersisted', () => {
+      const store = useContextStore();
+      const updatedEnv = { ...mockEnv, name: 'Production Updated' };
+      store.refreshEnvironment(updatedEnv);
+
+      expect(store.currentEnvironment).toEqual(updatedEnv);
+      const stored = JSON.parse(localStorage.getItem('mic_ctx_environment')!);
+      expect(stored).toEqual(updatedEnv);
     });
   });
 

@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Features;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace MicCheck.Api.Identities;
 
 [ApiController]
-[Route("api/v1/identities")]
+[Route("api/v1/identity")]
 [Authorize(Policy = AuthorizationPolicies.FlagsApiAccess)]
 public class IdentitiesController(
     FeatureEvaluationService featureEvaluationService,

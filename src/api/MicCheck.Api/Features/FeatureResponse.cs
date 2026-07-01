@@ -8,7 +8,8 @@ public record FeatureResponse(
     string? Description,
     bool DefaultEnabled,
     int ProjectId,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<TagResponse> Tags
 )
 {
     public static FeatureResponse From(Feature feature) => new(
@@ -19,5 +20,6 @@ public record FeatureResponse(
         feature.Description,
         feature.DefaultEnabled,
         feature.ProjectId,
-        feature.CreatedAt);
+        feature.CreatedAt,
+        feature.Tags.Select(TagResponse.From).ToList());
 }

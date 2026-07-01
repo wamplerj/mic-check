@@ -6,7 +6,7 @@
         size="small"
         color="primary"
         variant="tonal"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         data-testid="add-webhook-btn"
         @click="openAddDialog"
       >
@@ -69,21 +69,21 @@
             <td class="text-caption text-medium-emphasis">{{ formatDate(hook.createdAt) }}</td>
             <td class="text-end">
               <v-btn
-                icon="mdi-history"
+                icon="ri-history-line"
                 size="x-small"
                 variant="text"
                 :data-testid="`view-deliveries-${hook.id}`"
                 @click="openDeliveries(hook)"
               />
               <v-btn
-                icon="mdi-pencil-outline"
+                icon="ri-edit-line"
                 size="x-small"
                 variant="text"
                 :data-testid="`edit-webhook-${hook.id}`"
                 @click="openEditDialog(hook)"
               />
               <v-btn
-                icon="mdi-trash-can-outline"
+                icon="ri-delete-bin-line"
                 size="x-small"
                 variant="text"
                 color="error"
@@ -110,7 +110,7 @@
       <v-card rounded="lg" data-testid="deliveries-dialog">
         <v-card-title class="d-flex align-center justify-space-between pa-4 pb-2">
           <span class="text-h6">Delivery History</span>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="showDeliveries = false" />
+          <v-btn icon="ri-close-line" variant="text" size="small" @click="showDeliveries = false" />
         </v-card-title>
         <v-divider />
         <v-card-text class="pa-4">

@@ -8,17 +8,18 @@
     <v-card v-if="feature" rounded="lg" data-testid="feature-detail">
       <!-- Header -->
       <v-card-title class="d-flex align-center justify-space-between pa-6 pb-3">
-        <div class="d-flex align-center ga-2">
+        <div class="d-flex align-center">
+          {{ feature.name }}
           <v-chip
             :color="feature.type === 'MULTIVARIATE' ? 'secondary' : 'primary'"
-            size="small"
+            size="x-small"
             variant="tonal"
+            style="ml-4"
           >
             {{ feature.type }}
           </v-chip>
-          <span class="text-h6">{{ feature.name }}</span>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" @click="$emit('update:modelValue', false)" />
+        <v-btn icon="ri-close-line" variant="text" size="small" @click="$emit('update:modelValue', false)" />
       </v-card-title>
 
       <v-tabs v-model="activeTab" color="primary" class="px-4">
@@ -28,7 +29,7 @@
       </v-tabs>
       <v-divider />
 
-      <v-card-text class="pa-0">
+      <v-card-text class="pa-0" style="height: 580px; overflow-y: auto;">
         <v-tabs-window v-model="activeTab">
           <!-- ── Value tab ─────────────────────────────────────────────── -->
           <v-tabs-window-item value="value" class="pa-6">
@@ -45,7 +46,7 @@
             </v-alert>
 
             <div v-if="!featureState" class="text-center py-6 text-medium-emphasis">
-              <v-icon size="32" class="mb-2">mdi-server-outline</v-icon>
+              <v-icon size="32" class="mb-2">ri-server-line</v-icon>
               <p>Select an environment to manage feature state.</p>
             </div>
 
@@ -94,7 +95,7 @@
               <v-divider class="my-5" />
 
               <!-- Tags -->
-              <TagsChipInput />
+              <TagsChipInput v-if="feature" :feature="feature" @updated="onTagsUpdated" />
             </template>
           </v-tabs-window-item>
 
@@ -113,7 +114,7 @@
             </v-alert>
 
             <div v-if="!featureState" class="text-center py-6 text-medium-emphasis">
-              <v-icon size="32" class="mb-2">mdi-server-outline</v-icon>
+              <v-icon size="32" class="mb-2">ri-server-line</v-icon>
               <p>Select an environment to manage segment overrides.</p>
             </div>
 
@@ -130,7 +131,7 @@
                   <v-card-text class="pa-3">
                     <div class="d-flex align-center justify-space-between">
                       <div class="d-flex align-center ga-2">
-                        <v-icon size="18" color="primary">mdi-account-group-outline</v-icon>
+                        <v-icon size="18" color="primary">ri-group-line</v-icon>
                         <span class="text-body-2 font-weight-medium">{{ fsg.segmentName }}</span>
                         <v-chip size="x-small" variant="tonal" color="secondary">
                           Priority {{ fsg.priority }}
@@ -146,7 +147,7 @@
                           @update:model-value="onUpdateSegmentEnabled(fsg, $event)"
                         />
                         <v-btn
-                          icon="mdi-trash-can-outline"
+                          icon="ri-delete-bin-line"
                           size="x-small"
                           variant="text"
                           color="error"
@@ -273,7 +274,17 @@
                   data-testid="settings-default-enabled-toggle"
                 />
               </div>
-              <div class="d-flex justify-end mb-6">
+              <div class="d-flex justify-space-between align-center">
+                <v-btn
+                  color="error"
+                  variant="text"
+                  size="small"
+                  :loading="isDeleting"
+                  data-testid="delete-feature-btn"
+                  @click="onDelete"
+                >
+                  Delete feature
+                </v-btn>
                 <v-btn
                   color="primary"
                   variant="flat"
@@ -282,44 +293,10 @@
                   data-testid="save-settings-btn"
                   @click="onSaveSettings"
                 >
-                  Save settings
+                  Save changes
                 </v-btn>
               </div>
             </v-form>
-
-            <!-- Danger zone -->
-            <v-card variant="outlined" color="error" rounded="lg">
-              <v-card-title class="text-body-1 text-error pa-4 pb-2">Danger Zone</v-card-title>
-              <v-card-text class="pa-4 pt-0">
-                <p class="text-body-2 mb-3">
-                  Permanently delete this feature flag. This cannot be undone and will remove
-                  the flag from all environments.
-                </p>
-                <p class="text-body-2 mb-2">
-                  Type <strong>{{ feature.name }}</strong> to confirm:
-                </p>
-                <v-text-field
-                  v-model="deleteConfirmName"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  :placeholder="feature.name"
-                  class="mb-3"
-                  data-testid="delete-confirm-input"
-                />
-                <v-btn
-                  color="error"
-                  variant="flat"
-                  size="small"
-                  :disabled="deleteConfirmName !== feature.name"
-                  :loading="isDeleting"
-                  data-testid="delete-feature-btn"
-                  @click="onDelete"
-                >
-                  Delete feature
-                </v-btn>
-              </v-card-text>
-            </v-card>
           </v-tabs-window-item>
         </v-tabs-window>
       </v-card-text>
@@ -342,6 +319,7 @@ interface Props {
   modelValue: boolean;
   feature: FeatureResponse | null;
   featureState: FeatureStateResponse | null;
+  initialTab?: string;
 }
 
 const props = defineProps<Props>();
@@ -360,7 +338,6 @@ const isTogglingEnabled = ref(false);
 const isSavingValue = ref(false);
 const isSavingSettings = ref(false);
 const isDeleting = ref(false);
-const deleteConfirmName = ref('');
 const editedValue = ref<string | null>(null);
 const settingsFormRef = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null);
 const valueErrorMessage = ref<string | null>(null);
@@ -476,7 +453,6 @@ function syncSettingsForm(f: FeatureResponse | null): void {
       description: f.description ?? '',
       defaultEnabled: f.defaultEnabled,
     };
-    deleteConfirmName.value = '';
   }
 }
 
@@ -497,7 +473,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      activeTab.value = 'value';
+      activeTab.value = props.initialTab ?? 'value';
       valueErrorMessage.value = null;
       settingsErrorMessage.value = null;
       segmentsErrorMessage.value = null;
@@ -506,6 +482,7 @@ watch(
       newSegmentEnabled.value = true;
       newSegmentPriority.value = 1;
       syncSettingsForm(props.feature);
+
       editedValue.value = props.featureState?.value ?? null;
       loadSegmentsData();
     }
@@ -579,6 +556,10 @@ async function onSaveSettings(): Promise<void> {
   } finally {
     isSavingSettings.value = false;
   }
+}
+
+function onTagsUpdated(updated: FeatureResponse): void {
+  emit('updated', updated);
 }
 
 async function onDelete(): Promise<void> {

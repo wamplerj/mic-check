@@ -37,51 +37,6 @@ namespace MicCheck.Api.Migrations
                     b.ToTable("FeatureTags");
                 });
 
-            modelBuilder.Entity("MicCheck.Api.ApiKeys.ApiKey", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("OrganizationId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Prefix")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Key")
-                        .IsUnique();
-
-                    b.HasIndex("OrganizationId");
-
-                    b.ToTable("ApiKeys");
-                });
-
             modelBuilder.Entity("MicCheck.Api.Audit.AuditLog", b =>
                 {
                     b.Property<int>("Id")
@@ -130,7 +85,52 @@ namespace MicCheck.Api.Migrations
                     b.ToTable("AuditLogs");
                 });
 
-            modelBuilder.Entity("MicCheck.Api.Authorization.UserProjectPermission", b =>
+            modelBuilder.Entity("MicCheck.Api.Common.Security.ApiKeys.ApiKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("OrganizationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("ApiKeys");
+                });
+
+            modelBuilder.Entity("MicCheck.Api.Common.Security.Authorization.UserProjectPermission", b =>
                 {
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -302,6 +302,44 @@ namespace MicCheck.Api.Migrations
                     b.ToTable("FeatureStates");
                 });
 
+            modelBuilder.Entity("MicCheck.Api.Features.FeatureUsageDaily", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("Count")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("EnvironmentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FeatureId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FeatureName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("UsageDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnvironmentId", "UsageDate");
+
+                    b.HasIndex("EnvironmentId", "FeatureId", "UsageDate")
+                        .IsUnique();
+
+                    b.ToTable("FeatureUsageDaily");
+                });
+
             modelBuilder.Entity("MicCheck.Api.Features.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -400,12 +438,20 @@ namespace MicCheck.Api.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("InviteToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InviteToken")
+                        .IsUnique()
+                        .HasFilter("\"InviteToken\" IS NOT NULL");
 
                     b.ToTable("Organizations");
                 });
@@ -417,6 +463,11 @@ namespace MicCheck.Api.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsPrimary")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("Role")
                         .HasColumnType("integer");
@@ -724,7 +775,7 @@ namespace MicCheck.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MicCheck.Api.ApiKeys.ApiKey", b =>
+            modelBuilder.Entity("MicCheck.Api.Common.Security.ApiKeys.ApiKey", b =>
                 {
                     b.HasOne("MicCheck.Api.Organizations.Organization", null)
                         .WithMany("ApiKeys")

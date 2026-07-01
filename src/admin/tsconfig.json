@@ -15,15 +15,23 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@core/*": ["src/@core/*"],
+      "@core": ["src/@core"],
+      "@layouts/*": ["src/@layouts/*"],
+      "@layouts": ["src/@layouts"],
+      "@images/*": ["src/assets/images/*"],
+      "@styles/*": ["src/assets/styles/*"],
+      "@configured-variables": ["src/assets/styles/variables/_template.scss"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "jest", "vite/client"]
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "vite.config.ts"
   ],
   "exclude": [
     "node_modules",

@@ -1,9 +1,11 @@
+using System.Diagnostics.Metrics;
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Segments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Moq;
 using NUnit.Framework;
 using AppEnvironment = MicCheck.Api.Environments.Environment;
 
@@ -14,6 +16,7 @@ public class FeatureEvaluationServiceTests
 {
     private MicCheckDbContext _db = null!;
     private FeatureEvaluationService _service = null!;
+    private FeatureUsageMetrics _usageMetrics = null!;
     private const int EnvironmentId = 1;
     private const int ProjectId = 1;
 
@@ -25,14 +28,22 @@ public class FeatureEvaluationServiceTests
             .Options;
         _db = new MicCheckDbContext(options);
 
+        var meterFactory = new Mock<IMeterFactory>();
+        meterFactory.Setup(f => f.Create(It.IsAny<MeterOptions>())).Returns(new Meter("test"));
+        _usageMetrics = new FeatureUsageMetrics(meterFactory.Object);
+
         var cache = new FlagCache(new MemoryCache(new MemoryCacheOptions()));
-        _service = new FeatureEvaluationService(_db, new SegmentEvaluator(), cache);
+        _service = new FeatureEvaluationService(_db, new SegmentEvaluator(), cache, _usageMetrics);
 
         SeedBaseData();
     }
 
     [TearDown]
-    public void TearDown() => _db.Dispose();
+    public void TearDown()
+    {
+        _db.Dispose();
+        _usageMetrics.Dispose();
+    }
 
     private void SeedBaseData()
     {

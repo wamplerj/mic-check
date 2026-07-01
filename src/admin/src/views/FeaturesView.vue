@@ -5,7 +5,7 @@
       <v-btn
         v-if="contextStore.currentProject"
         color="primary"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         data-testid="create-feature-btn"
         @click="openCreateDialog"
       >
@@ -16,7 +16,7 @@
     <!-- No project selected -->
     <v-card v-if="!contextStore.currentProject" variant="outlined" rounded="lg">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" color="medium-emphasis" class="mb-3">mdi-flag-outline</v-icon>
+        <v-icon size="48" color="medium-emphasis" class="mb-3">ri-flag-line</v-icon>
         <p class="text-h6 mb-2">Select a project</p>
         <p class="text-body-2 text-medium-emphasis">
           Choose a project from the sidebar to manage its feature flags.
@@ -28,7 +28,7 @@
       <!-- Search bar -->
       <v-text-field
         v-model="search"
-        prepend-inner-icon="mdi-magnify"
+        prepend-inner-icon="ri-search-line"
         label="Search features"
         variant="outlined"
         density="comfortable"
@@ -53,7 +53,41 @@
           <!-- Name + description -->
           <template #item.name="{ item }: { item: FeatureResponse }">
             <div>
-              <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+              <div class="d-flex flex-wrap align-center ga-1">
+                <span class="text-subtitle-1 font-weight-bold">{{ item.name }}</span>
+                <v-tooltip
+                  v-if="(featureSegmentsMap.get(item.id) ?? []).length > 0"
+                  text="Has segment overrides"
+                  location="top"
+                >
+                  <template #activator="{ props: tooltipProps }">
+                    <v-btn
+                      v-bind="tooltipProps"
+                      icon="ri-donut-chart-fill"
+                      size="small"
+                      variant="text"
+                      color="secondary"
+                      :data-testid="`segment-override-icon-${item.id}`"
+                      @click.stop="openDetailOnSegments(item)"
+                    />
+                  </template>
+                </v-tooltip>
+                <v-chip
+                  v-for="tag in (item.tags ?? []).slice(0, 5)"
+                  :key="tag.id"
+                  size="x-small"
+                  variant="flat"
+                  :color="tag.color"
+                  :data-testid="`feature-tag-chip-${item.id}-${tag.id}`"
+                >
+                  {{ tag.label }}
+                </v-chip>
+                <span
+                  v-if="(item.tags ?? []).length > 5"
+                  class="text-caption text-medium-emphasis"
+                  :title="`${(item.tags ?? []).length - 5} more`"
+                >…</span>
+              </div>
               <p v-if="item.description" class="text-caption text-medium-emphasis mb-0">
                 {{ item.description }}
               </p>
@@ -124,10 +158,22 @@
             </span>
           </template>
 
+          <!-- Actions -->
+          <template #item.actions="{ item }: { item: FeatureResponse }">
+            <v-btn
+              icon="ri-delete-bin-line"
+              size="small"
+              variant="text"
+              color="error"
+              :data-testid="`delete-feature-${item.id}`"
+              @click.stop="openDeleteDialog(item)"
+            />
+          </template>
+
           <!-- Empty state -->
           <template #no-data>
             <div class="text-center py-8">
-              <v-icon size="40" color="medium-emphasis" class="mb-2">mdi-flag-outline</v-icon>
+              <v-icon size="40" color="medium-emphasis" class="mb-2">ri-flag-line</v-icon>
               <p class="text-body-2 text-medium-emphasis">No features yet. Create your first flag.</p>
             </div>
           </template>
@@ -146,10 +192,36 @@
       v-model="showDetail"
       :feature="selectedFeature"
       :feature-state="selectedFeatureState"
+      :initial-tab="detailInitialTab"
       @updated="onFeatureUpdated"
       @deleted="onFeatureDeleted"
       @state-updated="onStateUpdated"
     />
+
+    <!-- Delete confirmation dialog -->
+    <v-dialog v-model="showDeleteDialog" max-width="400" persistent>
+      <v-card rounded="lg">
+        <v-card-title class="pa-5 pb-3">Delete feature</v-card-title>
+        <v-card-text class="pa-5 pt-0">
+          <p class="text-body-2">
+            Delete <strong>{{ featureToDelete?.name }}</strong>? This cannot be undone.
+          </p>
+        </v-card-text>
+        <v-card-actions class="pa-5 pt-0">
+          <v-spacer />
+          <v-btn variant="text" :disabled="isDeletingFromTable" @click="closeDeleteDialog">Cancel</v-btn>
+          <v-btn
+            color="error"
+            variant="flat"
+            :loading="isDeletingFromTable"
+            data-testid="confirm-delete-btn"
+            @click="onConfirmDelete"
+          >
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Error snackbar -->
     <v-snackbar
@@ -168,7 +240,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { listFeatures } from '@/api/features';
+import { listFeatures, deleteFeature } from '@/api/features';
 import { listFeatureStates, patchFeatureState } from '@/api/featureStates';
 import { listFeatureSegments } from '@/api/featureSegments';
 import { useContextStore } from '@/stores/context';
@@ -199,6 +271,12 @@ function showError(message: string): void {
 const showDialog = ref(false);
 const showDetail = ref(false);
 const selectedFeature = ref<FeatureResponse | null>(null);
+const detailInitialTab = ref('value');
+
+// Delete dialog state
+const showDeleteDialog = ref(false);
+const featureToDelete = ref<FeatureResponse | null>(null);
+const isDeletingFromTable = ref(false);
 
 const selectedFeatureState = computed(() =>
   selectedFeature.value ? (featureStateMap.value.get(selectedFeature.value.id) ?? null) : null,
@@ -211,6 +289,7 @@ const headers = [
   { title: 'Enabled', key: 'enabled', sortable: false, width: '100' },
   { title: 'Segments', key: 'segments', sortable: false },
   { title: 'Created', key: 'createdAt', sortable: true, width: '130' },
+  { title: '', key: 'actions', sortable: false, width: '52' },
 ];
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
@@ -290,6 +369,13 @@ function openCreateDialog(): void {
 }
 
 function onRowClick(_event: Event, { item }: { item: FeatureResponse }): void {
+  detailInitialTab.value = 'value';
+  selectedFeature.value = item;
+  showDetail.value = true;
+}
+
+function openDetailOnSegments(item: FeatureResponse): void {
+  detailInitialTab.value = 'segments';
   selectedFeature.value = item;
   showDetail.value = true;
 }
@@ -309,6 +395,32 @@ function onFeatureUpdated(updated: FeatureResponse): void {
   const idx = features.value.findIndex((f) => f.id === updated.id);
   if (idx >= 0) features.value[idx] = updated;
   if (selectedFeature.value?.id === updated.id) selectedFeature.value = updated;
+}
+
+function openDeleteDialog(feature: FeatureResponse): void {
+  featureToDelete.value = feature;
+  showDeleteDialog.value = true;
+}
+
+function closeDeleteDialog(): void {
+  showDeleteDialog.value = false;
+  featureToDelete.value = null;
+}
+
+async function onConfirmDelete(): Promise<void> {
+  const feature = featureToDelete.value;
+  const projectId = contextStore.currentProject?.id;
+  if (!feature || !projectId) return;
+  isDeletingFromTable.value = true;
+  try {
+    await deleteFeature(projectId, feature.id);
+    onFeatureDeleted(feature.id);
+    closeDeleteDialog();
+  } catch {
+    showError('Failed to delete feature. Please try again.');
+  } finally {
+    isDeletingFromTable.value = false;
+  }
 }
 
 function onFeatureDeleted(featureId: number): void {

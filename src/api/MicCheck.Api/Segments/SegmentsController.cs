@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,12 +7,11 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace MicCheck.Api.Segments;
 
 [ApiController]
-[Route("api/v1/projects/{projectId}/segments")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class SegmentsController(SegmentService segmentService) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("api/v1/project/{projectId}/segments")]
     public async Task<ActionResult<PaginatedResponse<SegmentResponse>>> List(
         int projectId,
         [FromQuery] int page = 1,
@@ -25,7 +24,7 @@ public class SegmentsController(SegmentService segmentService) : ControllerBase
         return Ok(new PaginatedResponse<SegmentResponse>(all.Count, null, null, paged));
     }
 
-    [HttpPost]
+    [HttpPost("api/v1/project/{projectId}/segments")]
     public async Task<ActionResult<SegmentResponse>> Create(
         int projectId, CreateSegmentRequest request, CancellationToken ct)
     {
@@ -41,7 +40,7 @@ public class SegmentsController(SegmentService segmentService) : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("api/v1/project/{projectId}/segment/{id}")]
     public async Task<ActionResult<SegmentResponse>> GetById(int projectId, int id, CancellationToken ct)
     {
         var segment = await segmentService.FindByIdAsync(id, ct);
@@ -49,7 +48,7 @@ public class SegmentsController(SegmentService segmentService) : ControllerBase
         return Ok(SegmentResponse.From(segment));
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("api/v1/project/{projectId}/segment/{id}")]
     public async Task<ActionResult<SegmentResponse>> Update(
         int projectId, int id, CreateSegmentRequest request, CancellationToken ct)
     {
@@ -68,7 +67,7 @@ public class SegmentsController(SegmentService segmentService) : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("api/v1/project/{projectId}/segment/{id}")]
     public async Task<IActionResult> Delete(int projectId, int id, CancellationToken ct)
     {
         var segment = await segmentService.FindByIdAsync(id, ct);

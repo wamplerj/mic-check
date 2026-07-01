@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using MicCheck.Api.Environments;
 using MicCheck.Api.Projects;
@@ -18,7 +18,7 @@ public class AuditLogsController(
     ProjectService projectService,
     EnvironmentService environmentService) : ControllerBase
 {
-    [HttpGet("api/v1/organisations/{id}/audit-logs")]
+    [HttpGet("api/v1/organisation/{id}/audit-logs")]
     public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByOrganization(
         int id,
         [FromQuery] AuditLogFilter filter,
@@ -28,10 +28,10 @@ public class AuditLogsController(
         if (org is null) return NotFound();
 
         var (total, logs) = await auditLogQueryService.ListByOrganizationAsync(id, filter, ct);
-        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.ToList()));
     }
 
-    [HttpGet("api/v1/projects/{projectId}/audit-logs")]
+    [HttpGet("api/v1/project/{projectId}/audit-logs")]
     public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByProject(
         int projectId,
         [FromQuery] AuditLogFilter filter,
@@ -41,10 +41,10 @@ public class AuditLogsController(
         if (project is null) return NotFound();
 
         var (total, logs) = await auditLogQueryService.ListByProjectAsync(projectId, filter, ct);
-        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.ToList()));
     }
 
-    [HttpGet("api/v1/environments/{apiKey}/audit-logs")]
+    [HttpGet("api/v1/environment/{apiKey}/audit-logs")]
     public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByEnvironment(
         string apiKey,
         [FromQuery] AuditLogFilter filter,
@@ -54,6 +54,6 @@ public class AuditLogsController(
         if (environment is null) return NotFound();
 
         var (total, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, filter, ct);
-        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.Select(AuditLogResponse.From).ToList()));
+        return Ok(new PaginatedResponse<AuditLogResponse>(total, null, null, logs.ToList()));
     }
 }

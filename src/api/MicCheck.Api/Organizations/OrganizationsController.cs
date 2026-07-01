@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using MicCheck.Api.Webhooks;
 using Microsoft.AspNetCore.Authorization;
@@ -8,12 +8,11 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace MicCheck.Api.Organizations;
 
 [ApiController]
-[Route("api/v1/organisations")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class OrganizationsController(OrganizationService organizationService, WebhookService webhookService) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("api/v1/organisations")]
     public async Task<ActionResult<PaginatedResponse<OrganizationResponse>>> List(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
@@ -22,12 +21,13 @@ public class OrganizationsController(OrganizationService organizationService, We
         if (userId is null) return Unauthorized();
 
         var all = await organizationService.ListForUserAsync(userId.Value, ct);
-        var paged = all.Skip((page - 1) * pageSize).Take(pageSize).Select(OrganizationResponse.From).ToList();
+        var paged = all.Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => OrganizationResponse.From(x.Org, x.IsPrimary)).ToList();
 
         return Ok(new PaginatedResponse<OrganizationResponse>(all.Count, null, null, paged));
     }
 
-    [HttpPost]
+    [HttpPost("api/v1/organisations")]
     public async Task<ActionResult<OrganizationResponse>> Create(
         CreateOrganizationRequest request, CancellationToken ct)
     {
@@ -38,7 +38,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return CreatedAtAction(nameof(GetById), new { id = org.Id }, OrganizationResponse.From(org));
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("api/v1/organisation/{id}")]
     public async Task<ActionResult<OrganizationResponse>> GetById(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -46,7 +46,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(OrganizationResponse.From(org));
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("api/v1/organisation/{id}")]
     public async Task<ActionResult<OrganizationResponse>> Update(
         int id, UpdateOrganizationRequest request, CancellationToken ct)
     {
@@ -57,7 +57,24 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(OrganizationResponse.From(updated));
     }
 
-    [HttpDelete("{id}")]
+    [HttpPut("api/v1/organisation/{id}/primary")]
+    public async Task<IActionResult> SetPrimary(int id, CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        try
+        {
+            await organizationService.SetPrimaryAsync(id, userId.Value, ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpDelete("api/v1/organisation/{id}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -67,7 +84,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return NoContent();
     }
 
-    [HttpGet("{id}/users")]
+    [HttpGet("api/v1/organisation/{id}/users")]
     public async Task<ActionResult<IReadOnlyList<OrganizationMemberResponse>>> ListUsers(
         int id, CancellationToken ct)
     {
@@ -78,7 +95,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(members.Select(OrganizationMemberResponse.From).ToList());
     }
 
-    [HttpPost("{id}/users/invite")]
+    [HttpPost("api/v1/organisation/{id}/users/invite")]
     public async Task<IActionResult> InviteUser(int id, InviteUserRequest request, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -89,7 +106,55 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok();
     }
 
-    [HttpDelete("{id}/users/{userId}")]
+    [HttpPost("api/v1/organisation/{id}/users/invite-by-email")]
+    public async Task<ActionResult<IReadOnlyList<InviteByEmailResult>>> InviteUsersByEmail(
+        int id, InviteUsersByEmailRequest request, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var results = await organizationService.InviteUsersByEmailAsync(id, request.Invites, ct);
+        return Ok(results);
+    }
+
+    [HttpGet("api/v1/organisation/{id}/invite-link")]
+    public async Task<ActionResult<InviteTokenResponse>> GetInviteLink(int id, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var token = await organizationService.GetOrCreateInviteTokenAsync(id, ct);
+        return Ok(new InviteTokenResponse(token));
+    }
+
+    [HttpPost("api/v1/organisation/{id}/invite-link/regenerate")]
+    public async Task<ActionResult<InviteTokenResponse>> RegenerateInviteLink(int id, CancellationToken ct)
+    {
+        var org = await organizationService.FindByIdAsync(id, ct);
+        if (org is null) return NotFound();
+
+        var token = await organizationService.RegenerateInviteTokenAsync(id, ct);
+        return Ok(new InviteTokenResponse(token));
+    }
+
+    [HttpPost("api/v1/organisations/invite/{token}/accept")]
+    public async Task<IActionResult> AcceptInvite(string token, CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        try
+        {
+            await organizationService.AcceptInviteAsync(token, userId.Value, ct);
+            return Ok();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Invalid or expired invite link.");
+        }
+    }
+
+    [HttpDelete("api/v1/organisation/{id}/user/{userId}")]
     public async Task<IActionResult> RemoveUser(int id, int userId, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -99,7 +164,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return NoContent();
     }
 
-    [HttpGet("{id}/webhooks")]
+    [HttpGet("api/v1/organisation/{id}/webhooks")]
     public async Task<ActionResult<IReadOnlyList<WebhookResponse>>> ListWebhooks(int id, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
@@ -109,7 +174,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(webhooks.Select(WebhookResponse.From).ToList());
     }
 
-    [HttpPost("{id}/webhooks")]
+    [HttpPost("api/v1/organisation/{id}/webhooks")]
     public async Task<ActionResult<WebhookResponse>> CreateWebhook(
         int id, CreateWebhookRequest request, CancellationToken ct)
     {
@@ -120,7 +185,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return CreatedAtAction(nameof(ListWebhooks), new { id }, WebhookResponse.From(webhook));
     }
 
-    [HttpPut("{id}/webhooks/{webhookId}")]
+    [HttpPut("api/v1/organisation/{id}/webhook/{webhookId}")]
     public async Task<ActionResult<WebhookResponse>> UpdateWebhook(
         int id, int webhookId, CreateWebhookRequest request, CancellationToken ct)
     {
@@ -134,7 +199,7 @@ public class OrganizationsController(OrganizationService organizationService, We
         return Ok(WebhookResponse.From(updated));
     }
 
-    [HttpDelete("{id}/webhooks/{webhookId}")]
+    [HttpDelete("api/v1/organisation/{id}/webhook/{webhookId}")]
     public async Task<IActionResult> DeleteWebhook(int id, int webhookId, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);

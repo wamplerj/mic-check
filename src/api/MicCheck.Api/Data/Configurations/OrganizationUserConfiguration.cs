@@ -10,5 +10,6 @@ public class OrganizationUserConfiguration : IEntityTypeConfiguration<Organizati
     {
         builder.HasKey(ou => new { ou.OrganizationId, ou.UserId });
         builder.Property(ou => ou.Role).IsRequired();
+        builder.Property(ou => ou.IsPrimary).IsRequired().HasDefaultValue(false);
     }
 }

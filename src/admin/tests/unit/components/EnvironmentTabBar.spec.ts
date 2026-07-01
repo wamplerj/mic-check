@@ -56,13 +56,6 @@ describe('EnvironmentTabBar', () => {
       expect(envApi.listEnvironments).not.toHaveBeenCalled();
     });
 
-    it('ThenNoProjectMessageIsShown', async () => {
-      const wrapper = mountComponent();
-      await flushPromises();
-
-      expect(wrapper.find('[data-testid="env-no-project-message"]').exists()).toBe(true);
-    });
-
     it('ThenCreateEnvironmentButtonIsDisabled', async () => {
       const wrapper = mountComponent();
       await flushPromises();
@@ -84,7 +77,7 @@ describe('EnvironmentTabBar', () => {
       expect(envApi.listEnvironments).toHaveBeenCalledWith(mockProject.id);
     });
 
-    it('ThenEnvironmentChipsAreRendered', async () => {
+    it('ThenEnvironmentSelectIsEnabled', async () => {
       jest.mocked(envApi.listEnvironments).mockResolvedValue(mockEnvironments);
 
       const contextStore = useContextStore();
@@ -93,8 +86,7 @@ describe('EnvironmentTabBar', () => {
       contextStore.setProject(mockProject);
       await flushPromises();
 
-      expect(wrapper.find('[data-testid="env-chip-development"]').exists()).toBe(true);
-      expect(wrapper.find('[data-testid="env-chip-production"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="env-select"]').attributes('disabled')).toBeUndefined();
     });
 
     it('ThenFirstEnvironmentIsAutoSelected', async () => {
@@ -122,7 +114,7 @@ describe('EnvironmentTabBar', () => {
     });
   });
 
-  describe('WhenEnvironmentChipIsClicked', () => {
+  describe('WhenEnvironmentIsSelected', () => {
     it('ThenContextStoreIsUpdatedWithSelectedEnvironment', async () => {
       jest.mocked(envApi.listEnvironments).mockResolvedValue(mockEnvironments);
 
@@ -132,7 +124,7 @@ describe('EnvironmentTabBar', () => {
       contextStore.setProject(mockProject);
       await flushPromises();
 
-      await wrapper.findComponent({ name: 'VChipGroup' }).vm.$emit('update:modelValue', 1);
+      await wrapper.findComponent({ name: 'VSelect' }).vm.$emit('update:modelValue', mockEnvironments[1]);
 
       expect(contextStore.currentEnvironment).toEqual(mockEnvironments[1]);
     });
@@ -158,16 +150,49 @@ describe('EnvironmentTabBar', () => {
   });
 
   describe('WhenApiReturnsNoEnvironments', () => {
-    it('ThenEmptyMessageIsDisplayed', async () => {
+    it('ThenNoEnvironmentIsAutoSelected', async () => {
       jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
 
       const contextStore = useContextStore();
-      const wrapper = mountComponent();
+      mountComponent();
 
       contextStore.setProject(mockProject);
       await flushPromises();
 
-      expect(wrapper.find('[data-testid="env-empty-message"]').exists()).toBe(true);
+      expect(contextStore.currentEnvironment).toBeNull();
+    });
+  });
+
+  describe('WhenStoredEnvironmentExistsInContextStore', () => {
+    it('ThenStoredEnvironmentIsRestoredAfterFetch', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue(mockEnvironments);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+      contextStore.setEnvironment(mockEnvironments[1]);
+
+      mountComponent();
+      await flushPromises();
+
+      expect(contextStore.currentEnvironment).toEqual(mockEnvironments[1]);
+    });
+
+    it('ThenEnvironmentIsClearedWhenProjectChanges', async () => {
+      jest.mocked(envApi.listEnvironments).mockResolvedValue(mockEnvironments);
+
+      const contextStore = useContextStore();
+      contextStore.setProject(mockProject);
+      contextStore.setEnvironment(mockEnvironments[0]);
+
+      mountComponent();
+      await flushPromises();
+
+      const newProject: ProjectResponse = { ...mockProject, id: 20, name: 'Mobile' };
+      jest.mocked(envApi.listEnvironments).mockResolvedValue([]);
+      contextStore.setProject(newProject);
+      await flushPromises();
+
+      expect(contextStore.currentEnvironment).toBeNull();
     });
   });
 

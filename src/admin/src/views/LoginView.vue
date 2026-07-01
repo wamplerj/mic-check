@@ -41,7 +41,7 @@
                 density="comfortable"
                 class="mb-4"
                 :rules="[rules.required]"
-                :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                :append-inner-icon="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"
                 @click:append-inner="showPassword = !showPassword"
                 data-testid="password-input"
               />

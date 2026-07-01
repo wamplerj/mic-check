@@ -1,0 +1,23 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.0">
+
+  <ItemGroup>
+    <ProjectReference Include="..\api\MicCheck.Api\MicCheck.Api.csproj" />
+    <ProjectReference Include="..\admin\Admin.esproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.4.2" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.4.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <UserSecretsId>d10a4485-2ac0-4ba7-bda5-8eb63e417567</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

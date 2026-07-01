@@ -7,7 +7,7 @@
     <!-- No project selected -->
     <v-card v-if="!contextStore.currentProject" variant="outlined" rounded="lg">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" color="medium-emphasis" class="mb-3">mdi-clipboard-text-clock-outline</v-icon>
+        <v-icon size="48" color="medium-emphasis" class="mb-3">ri-time-line</v-icon>
         <p class="text-h6 mb-2">Select a project</p>
         <p class="text-body-2 text-medium-emphasis">
           Choose a project from the sidebar to view its audit logs.
@@ -91,25 +91,29 @@
             <span class="text-caption text-medium-emphasis">{{ formatDate(item.createdAt) }}</span>
           </template>
 
+          <!-- User -->
+          <template #item.actorUserName="{ item }: { item: AuditLogResponse }">
+            <RouterLink
+              v-if="item.actorUserName && item.actorUserId"
+              :to="`/users/${item.actorUserId}`"
+              class="text-body-2 font-weight-medium text-primary"
+              style="text-decoration: none"
+            >
+              {{ item.actorUserName }}
+            </RouterLink>
+            <span v-else class="text-caption text-medium-emphasis">—</span>
+          </template>
+
           <!-- Action chip -->
           <template #item.action="{ item }: { item: AuditLogResponse }">
-            <v-chip
-              :color="actionColor(item.action)"
-              size="x-small"
-              variant="tonal"
-            >
+            <v-chip :color="actionColor(item.action)" size="x-small" variant="tonal">
               {{ item.action }}
             </v-chip>
           </template>
 
           <!-- Resource type -->
           <template #item.resourceType="{ item }: { item: AuditLogResponse }">
-            <span class="text-body-2">{{ item.resourceType }}</span>
-          </template>
-
-          <!-- Resource ID -->
-          <template #item.resourceId="{ item }: { item: AuditLogResponse }">
-            <span class="text-body-2 text-medium-emphasis">{{ item.resourceId }}</span>
+            <span class="text-body-2 font-weight-medium">{{ item.resourceType }}</span>
           </template>
 
           <!-- Changes (expandable) -->
@@ -126,7 +130,7 @@
               <pre
                 v-if="expandedIds.has(item.id)"
                 class="text-caption mt-1 pa-2 rounded"
-                style="background: rgba(0,0,0,0.05); white-space: pre-wrap; word-break: break-all; max-width: 300px"
+                style="background: rgba(0,0,0,0.05); white-space: pre-wrap; word-break: break-all"
                 :data-testid="`changes-${item.id}`"
               >{{ formatJson(item.changes) }}</pre>
             </div>
@@ -136,7 +140,7 @@
           <!-- Empty state -->
           <template #no-data>
             <div class="text-center py-8">
-              <v-icon size="40" color="medium-emphasis" class="mb-2">mdi-clipboard-text-clock-outline</v-icon>
+              <v-icon size="40" color="medium-emphasis" class="mb-2">ri-time-line</v-icon>
               <p class="text-body-2 text-medium-emphasis">No audit log entries found.</p>
             </div>
           </template>
@@ -148,7 +152,7 @@
             Page {{ page }} of {{ totalPages }} ({{ total }} entries)
           </span>
           <v-btn
-            icon="mdi-chevron-left"
+            icon="ri-arrow-left-s-line"
             size="small"
             variant="text"
             :disabled="page <= 1 || isLoading"
@@ -156,7 +160,7 @@
             @click="prevPage"
           />
           <v-btn
-            icon="mdi-chevron-right"
+            icon="ri-arrow-right-s-line"
             size="small"
             variant="text"
             :disabled="page >= totalPages || isLoading"
@@ -214,9 +218,9 @@ const actionOptions = ['Created', 'Updated', 'Deleted', 'Enabled', 'Disabled'];
 
 const headers = [
   { title: 'Timestamp', key: 'createdAt', sortable: false, width: '160' },
-  { title: 'Action', key: 'action', sortable: false, width: '100' },
-  { title: 'Resource Type', key: 'resourceType', sortable: false, width: '140' },
-  { title: 'Resource ID', key: 'resourceId', sortable: false, width: '100' },
+  { title: 'User', key: 'actorUserName', sortable: false },
+  { title: 'Action', key: 'action', sortable: false, width: '120' },
+  { title: 'Resource Type', key: 'resourceType', sortable: false, width: '160' },
   { title: 'Changes', key: 'changes', sortable: false },
 ];
 

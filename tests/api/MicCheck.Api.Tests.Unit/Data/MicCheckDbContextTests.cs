@@ -7,7 +7,7 @@ using MicCheck.Api.Segments;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Audit;
 using MicCheck.Api.Webhooks;
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Users;
 using Microsoft.EntityFrameworkCore;
 using AppEnvironment = MicCheck.Api.Environments.Environment;

@@ -10,14 +10,46 @@ const STORAGE_KEYS = {
   expiresAt: 'mic_expires_at',
 } as const;
 
+interface JwtPayload {
+  sub?: string;
+  email?: string;
+  given_name?: string;
+  family_name?: string;
+}
+
+function decodeJwtPayload(token: string): JwtPayload {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch {
+    return {};
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string | null>(null);
   const refreshToken = ref<string | null>(null);
   const expiresAt = ref<string | null>(null);
 
+  const firstName = ref<string>('');
+  const lastName = ref<string>('');
+  const email = ref<string>('');
+
   const isAuthenticated = computed(
     () => accessToken.value !== null && accessToken.value !== '',
   );
+
+  const displayName = computed(() => {
+    const full = `${firstName.value} ${lastName.value}`.trim();
+    return full || email.value || 'Account';
+  });
+
+  function applyTokenClaims(token: string): void {
+    const payload = decodeJwtPayload(token);
+    firstName.value = payload.given_name ?? '';
+    lastName.value = payload.family_name ?? '';
+    email.value = payload.email ?? '';
+  }
 
   function persistTokens(access: string, refresh: string, expiry: string): void {
     accessToken.value = access;
@@ -27,12 +59,16 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(STORAGE_KEYS.refreshToken, refresh);
     localStorage.setItem(STORAGE_KEYS.expiresAt, expiry);
     setAuthTokens(access, refresh);
+    applyTokenClaims(access);
   }
 
   function clearPersistedTokens(): void {
     accessToken.value = null;
     refreshToken.value = null;
     expiresAt.value = null;
+    firstName.value = '';
+    lastName.value = '';
+    email.value = '';
     localStorage.removeItem(STORAGE_KEYS.accessToken);
     localStorage.removeItem(STORAGE_KEYS.refreshToken);
     localStorage.removeItem(STORAGE_KEYS.expiresAt);
@@ -49,23 +85,30 @@ export const useAuthStore = defineStore('auth', () => {
       refreshToken.value = refresh;
       expiresAt.value = expiry;
       setAuthTokens(access, refresh);
+      applyTokenClaims(access);
     }
   }
 
-  async function login(email: string, password: string): Promise<void> {
-    const request: LoginRequest = { email, password };
+  function updateProfile(newFirstName: string, newLastName: string, newEmail: string): void {
+    firstName.value = newFirstName;
+    lastName.value = newLastName;
+    email.value = newEmail;
+  }
+
+  async function login(userEmail: string, password: string): Promise<void> {
+    const request: LoginRequest = { email: userEmail, password };
     const response = await authApi.login(request);
     persistTokens(response.accessToken, response.refreshToken, response.expiresAt);
   }
 
   async function register(
-    email: string,
+    userEmail: string,
     password: string,
-    firstName: string,
-    lastName: string,
+    userFirstName: string,
+    userLastName: string,
     organizationName: string,
   ): Promise<void> {
-    const request: RegisterRequest = { email, password, firstName, lastName, organizationName };
+    const request: RegisterRequest = { email: userEmail, password, firstName: userFirstName, lastName: userLastName, organizationName };
     const response = await authApi.register(request);
     persistTokens(response.accessToken, response.refreshToken, response.expiresAt);
   }
@@ -85,8 +128,13 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken,
     refreshToken,
     expiresAt,
+    firstName,
+    lastName,
+    email,
+    displayName,
     isAuthenticated,
     loadFromStorage,
+    updateProfile,
     login,
     register,
     logout,

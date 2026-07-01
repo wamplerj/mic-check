@@ -11,6 +11,8 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         builder.HasKey(o => o.Id);
         builder.Property(o => o.Name).HasMaxLength(200).IsRequired();
         builder.Property(o => o.CreatedAt).IsRequired();
+        builder.Property(o => o.InviteToken).HasMaxLength(64);
+        builder.HasIndex(o => o.InviteToken).IsUnique().HasFilter("\"InviteToken\" IS NOT NULL");
 
         builder.HasMany(o => o.Members)
             .WithOne()

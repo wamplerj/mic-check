@@ -1,4 +1,4 @@
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,12 +7,11 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace MicCheck.Api.Features;
 
 [ApiController]
-[Route("api/v1/projects/{projectId}/features")]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
 public class FeaturesController(FeatureService featureService) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("api/v1/project/{projectId}/features")]
     public async Task<ActionResult<PaginatedResponse<FeatureResponse>>> List(
         int projectId,
         [FromQuery] int page = 1,
@@ -25,14 +24,13 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
         return Ok(new PaginatedResponse<FeatureResponse>(all.Count, null, null, paged));
     }
 
-    [HttpPost]
+    [HttpPost("api/v1/project/{projectId}/features")]
     public async Task<ActionResult<FeatureResponse>> Create(
         int projectId, CreateFeatureRequest request, CancellationToken ct)
     {
         try
         {
-            var feature = await featureService.CreateAsync(
-                projectId, request.Name, request.Type, request.InitialValue, request.Description, ct);
+            var feature = await featureService.CreateAsync(projectId, request.Name, request.Type, request.InitialValue, request.Description, ct);
 
             return CreatedAtAction(nameof(GetById), new { projectId, id = feature.Id }, FeatureResponse.From(feature));
         }
@@ -42,7 +40,7 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("api/v1/project/{projectId}/feature/{id}")]
     public async Task<ActionResult<FeatureResponse>> GetById(int projectId, int id, CancellationToken ct)
     {
         var feature = await featureService.FindByIdAsync(id, ct);
@@ -50,7 +48,7 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
         return Ok(FeatureResponse.From(feature));
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("api/v1/project/{projectId}/feature/{id}")]
     public async Task<ActionResult<FeatureResponse>> Update(
         int projectId, int id, UpdateFeatureRequest request, CancellationToken ct)
     {
@@ -61,7 +59,7 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
         return Ok(FeatureResponse.From(updated));
     }
 
-    [HttpPatch("{id}")]
+    [HttpPatch("api/v1/project/{projectId}/feature/{id}")]
     public async Task<ActionResult<FeatureResponse>> Patch(
         int projectId, int id, PatchFeatureRequest request, CancellationToken ct)
     {
@@ -76,7 +74,7 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
         return Ok(FeatureResponse.From(updated));
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("api/v1/project/{projectId}/feature/{id}")]
     public async Task<IActionResult> Delete(int projectId, int id, CancellationToken ct)
     {
         var feature = await featureService.FindByIdAsync(id, ct);
@@ -84,5 +82,36 @@ public class FeaturesController(FeatureService featureService) : ControllerBase
 
         await featureService.DeleteAsync(id, ct);
         return NoContent();
+    }
+
+    [HttpPut("api/v1/project/{projectId}/feature/{id}/tag/{tagId}")]
+    public async Task<ActionResult<FeatureResponse>> AssignTag(int projectId, int id, int tagId, CancellationToken ct)
+    {
+        var feature = await featureService.FindByIdAsync(id, ct);
+        if (feature is null || feature.ProjectId != projectId) return NotFound();
+
+        try
+        {
+            var updated = await featureService.AssignTagAsync(id, tagId, ct);
+            return Ok(FeatureResponse.From(updated));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (DomainException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpDelete("api/v1/project/{projectId}/feature/{id}/tag/{tagId}")]
+    public async Task<ActionResult<FeatureResponse>> RemoveTag(int projectId, int id, int tagId, CancellationToken ct)
+    {
+        var feature = await featureService.FindByIdAsync(id, ct);
+        if (feature is null || feature.ProjectId != projectId) return NotFound();
+
+        var updated = await featureService.RemoveTagAsync(id, tagId, ct);
+        return Ok(FeatureResponse.From(updated));
     }
 }

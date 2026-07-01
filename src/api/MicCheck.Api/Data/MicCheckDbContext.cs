@@ -1,6 +1,6 @@
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Audit;
-using MicCheck.Api.Authorization;
+using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Features;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Organizations;
@@ -37,6 +37,7 @@ public class MicCheckDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserProjectPermission> UserProjectPermissions => Set<UserProjectPermission>();
+    public DbSet<FeatureUsageDaily> FeatureUsageDaily => Set<FeatureUsageDaily>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(MicCheckDbContext).Assembly);

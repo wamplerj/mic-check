@@ -4,7 +4,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import FeaturesView from '@/views/FeaturesView.vue';
 import { useContextStore } from '@/stores/context';
-import type { ProjectResponse, EnvironmentResponse, FeatureResponse, FeatureStateResponse } from '@/types/api';
+import type { ProjectResponse, EnvironmentResponse, FeatureResponse, FeatureStateResponse, TagResponse } from '@/types/api';
 
 jest.mock('@/api/features');
 jest.mock('@/api/featureStates');
@@ -25,9 +25,13 @@ const mockEnv: EnvironmentResponse = {
   id: 100, name: 'Development', apiKey: 'env-dev', projectId: 10, createdAt: '2026-01-01T00:00:00Z',
 };
 const mockFeatures: FeatureResponse[] = [
-  { id: 1, name: 'dark_mode', type: 'STANDARD', initialValue: null, description: 'Dark mode toggle', defaultEnabled: false, projectId: 10, createdAt: '2026-01-01T00:00:00Z' },
-  { id: 2, name: 'new_checkout', type: 'STANDARD', initialValue: null, description: null, defaultEnabled: true, projectId: 10, createdAt: '2026-01-01T00:00:00Z' },
+  { id: 1, name: 'dark_mode', type: 'STANDARD', initialValue: null, description: 'Dark mode toggle', defaultEnabled: false, projectId: 10, createdAt: '2026-01-01T00:00:00Z', tags: [] },
+  { id: 2, name: 'new_checkout', type: 'STANDARD', initialValue: null, description: null, defaultEnabled: true, projectId: 10, createdAt: '2026-01-01T00:00:00Z', tags: [] },
 ];
+
+function makeTag(id: number, label: string): TagResponse {
+  return { id, label, color: '#1565C0', projectId: 10, createdAt: '2026-01-01T00:00:00Z' };
+}
 const mockStates: FeatureStateResponse[] = [
   { id: 101, featureId: 1, environmentId: 100, identityId: null, featureSegmentId: null, enabled: false, value: null, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
   { id: 102, featureId: 2, environmentId: 100, identityId: null, featureSegmentId: null, enabled: true, value: null, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
@@ -58,7 +62,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue(mockStates);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -74,7 +78,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue(mockStates);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();
@@ -85,6 +89,43 @@ describe('FeaturesView', () => {
     });
   });
 
+  describe('WhenFeatureHasTags', () => {
+    it('ThenUpToFiveTagChipsAreShownAndExtraAreEllipsised', async () => {
+      const sixTags = [1, 2, 3, 4, 5, 6].map((id) => makeTag(id, `tag-${id}`));
+      const taggedFeature: FeatureResponse = { ...mockFeatures[0], tags: sixTags };
+      jest.mocked(featuresApi.listFeatures).mockResolvedValue({ count: 1, next: null, previous: null, results: [taggedFeature] });
+      jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue([]);
+
+      const contextStore = useContextStore();
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountView();
+      await flushPromises();
+
+      const chips = sixTags.slice(0, 5).map((tag) => wrapper.find(`[data-testid="feature-tag-chip-${taggedFeature.id}-${tag.id}"]`));
+      chips.forEach((chip) => expect(chip.exists()).toBe(true));
+      expect(wrapper.find(`[data-testid="feature-tag-chip-${taggedFeature.id}-6"]`).exists()).toBe(false);
+      expect(wrapper.text()).toContain('…');
+    });
+
+    it('ThenMissingTagsDoesNotThrow', async () => {
+      const untaggedFeature = { ...mockFeatures[0], tags: undefined } as unknown as FeatureResponse;
+      jest.mocked(featuresApi.listFeatures).mockResolvedValue({ count: 1, next: null, previous: null, results: [untaggedFeature] });
+      jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue([]);
+
+      const contextStore = useContextStore();
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
+      contextStore.setProject(mockProject);
+
+      const wrapper = mountView();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="features-table"]').exists()).toBe(true);
+      expect(wrapper.text()).toContain(untaggedFeature.name);
+    });
+  });
+
   describe('WhenToggleEnabledIsClicked', () => {
     it('ThenPatchFeatureStateIsCalled', async () => {
       jest.mocked(featuresApi.listFeatures).mockResolvedValue({ count: 2, next: null, previous: null, results: mockFeatures });
@@ -92,7 +133,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.patchFeatureState).mockResolvedValue({ ...mockStates[0], enabled: true });
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
       contextStore.setEnvironment(mockEnv);
 
@@ -115,7 +156,7 @@ describe('FeaturesView', () => {
       jest.mocked(featureStatesApi.listFeatureStates).mockResolvedValue([]);
 
       const contextStore = useContextStore();
-      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '' });
+      contextStore.setOrganization({ id: 1, name: 'Acme', createdAt: '', isPrimary: false });
       contextStore.setProject(mockProject);
 
       const wrapper = mountView();

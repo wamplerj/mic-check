@@ -1,16 +1,24 @@
 <template>
   <div data-testid="feature-value-editor">
     <!-- Type selector -->
-    <v-btn-toggle
-      v-model="detectedMode"
-      density="compact"
-      variant="outlined"
-      class="mb-3"
-      data-testid="value-mode-toggle"
-    >
-      <v-btn value="text" size="small">Text</v-btn>
-      <v-btn value="json" size="small">JSON</v-btn>
-    </v-btn-toggle>
+    <div class="d-flex mb-3" data-testid="value-mode-toggle">
+      <v-btn
+        size="small"
+        :variant="detectedMode === 'text' ? 'flat' : 'outlined'"
+        color="primary"
+        rounded="0"
+        style="border-radius: 4px 0 0 4px"
+        @click="detectedMode = 'text'"
+      >Text</v-btn>
+      <v-btn
+        size="small"
+        :variant="detectedMode === 'json' ? 'flat' : 'outlined'"
+        color="primary"
+        rounded="0"
+        style="border-radius: 0 4px 4px 0; margin-left: -1px"
+        @click="detectedMode = 'json'"
+      >JSON</v-btn>
+    </div>
 
     <!-- JSON mode -->
     <v-textarea
@@ -84,3 +92,4 @@ const rules = {
   },
 };
 </script>
+

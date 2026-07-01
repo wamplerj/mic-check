@@ -5,7 +5,7 @@
       <v-btn
         v-if="contextStore.currentEnvironment"
         color="primary"
-        prepend-icon="mdi-plus"
+        prepend-icon="ri-add-line"
         data-testid="create-identity-btn"
         @click="showCreateDialog = true"
       >
@@ -16,7 +16,7 @@
     <!-- No environment selected -->
     <v-card v-if="!contextStore.currentEnvironment" variant="outlined" rounded="lg">
       <v-card-text class="text-center py-10">
-        <v-icon size="48" color="medium-emphasis" class="mb-3">mdi-account-outline</v-icon>
+        <v-icon size="48" color="medium-emphasis" class="mb-3">ri-user-line</v-icon>
         <p class="text-h6 mb-2">Select an environment</p>
         <p class="text-body-2 text-medium-emphasis">
           Choose an environment to view and manage identities.
@@ -28,7 +28,7 @@
       <!-- Search bar -->
       <v-text-field
         v-model="search"
-        prepend-inner-icon="mdi-magnify"
+        prepend-inner-icon="ri-search-line"
         label="Search identities"
         variant="outlined"
         density="comfortable"
@@ -67,7 +67,7 @@
           <!-- Row actions -->
           <template #item.actions="{ item }: { item: IdentityResponse }">
             <v-btn
-              icon="mdi-pencil-outline"
+              icon="ri-edit-line"
               size="small"
               variant="text"
               :data-testid="`view-identity-${item.id}`"
@@ -78,7 +78,7 @@
           <!-- Empty state -->
           <template #no-data>
             <div class="text-center py-8">
-              <v-icon size="40" color="medium-emphasis" class="mb-2">mdi-account-outline</v-icon>
+              <v-icon size="40" color="medium-emphasis" class="mb-2">ri-user-line</v-icon>
               <p class="text-body-2 text-medium-emphasis">No identities found in this environment.</p>
             </div>
           </template>
@@ -91,6 +91,7 @@
       v-model="showDetail"
       :identity="selectedIdentity"
       @deleted="onIdentityDeleted"
+      @updated="onIdentityUpdated"
     />
 
     <!-- Create identity dialog -->
@@ -244,6 +245,12 @@ async function onCreateConfirm(): Promise<void> {
 function onCreateDialogClosed(): void {
   newIdentifier.value = '';
   createError.value = null;
+}
+
+function onIdentityUpdated(updated: IdentityResponse): void {
+  const idx = identities.value.findIndex((i) => i.id === updated.id);
+  if (idx >= 0) identities.value[idx] = updated;
+  selectedIdentity.value = updated;
 }
 
 function onIdentityDeleted(identityId: number): void {

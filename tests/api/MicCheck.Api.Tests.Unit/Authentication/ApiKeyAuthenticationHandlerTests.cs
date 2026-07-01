@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
-using MicCheck.Api.ApiKeys;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Data;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -46,7 +46,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/v1/organisations/1/api-keys/");
+        var response = await client.GetAsync("/api/v1/organisation/1/api-keys/");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -58,7 +58,7 @@ public class ApiKeyAuthenticationHandlerTests
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "not-a-jwt");
 
-        var response = await client.GetAsync("/api/v1/organisations/1/api-keys/");
+        var response = await client.GetAsync("/api/v1/organisation/1/api-keys/");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -69,7 +69,7 @@ public class ApiKeyAuthenticationHandlerTests
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("Authorization", "Api-Key not-a-real-key");
 
-        var response = await client.GetAsync("/api/v1/organisations/1/api-keys/");
+        var response = await client.GetAsync("/api/v1/organisation/1/api-keys/");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -95,7 +95,7 @@ public class ApiKeyAuthenticationHandlerTests
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("Authorization", $"Api-Key {rawKey}");
 
-        var response = await client.GetAsync("/api/v1/organisations/1/api-keys/");
+        var response = await client.GetAsync("/api/v1/organisation/1/api-keys/");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -122,7 +122,7 @@ public class ApiKeyAuthenticationHandlerTests
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("Authorization", $"Api-Key {rawKey}");
 
-        var response = await client.GetAsync("/api/v1/organisations/1/api-keys/");
+        var response = await client.GetAsync("/api/v1/organisation/1/api-keys/");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
     }
@@ -135,7 +135,7 @@ public class ApiKeyAuthenticationHandlerTests
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("Authorization", $"Api-Key {rawKey}");
 
-        var response = await client.GetAsync("/api/v1/organisations/1/api-keys/");
+        var response = await client.GetAsync("/api/v1/organisation/1/api-keys/");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
