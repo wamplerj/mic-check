@@ -1,0 +1,61 @@
+name: miccheck-qa
+
+# Dedicated, network-isolated QA stack. Not connected to the dev compose
+# stack's network - runs entirely on its own bridge network below, and the
+# database has no published host port.
+services:
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: miccheck
+      POSTGRES_USER: miccheck
+      POSTGRES_PASSWORD: password
+    volumes:
+      - miccheck-qa-pgdata:/var/lib/postgresql/data
+    networks:
+      - qa
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U miccheck -d miccheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ${API_IMAGE}:qa
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__miccheck: "Host=db;Database=miccheck;Username=miccheck;Password=password"
+      Jwt__SecretKey: ${JWT_SECRET_KEY}
+      Jwt__Issuer: MicCheck
+      Jwt__Audience: MicCheck
+    networks:
+      - qa
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/v1/health 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  admin:
+    image: ${ADMIN_IMAGE}:qa
+    ports:
+      - "${QA_ADMIN_PORT:-3001}:80"
+    networks:
+      - qa
+    depends_on:
+      api:
+        condition: service_started
+
+networks:
+  qa:
+    name: miccheck-qa-net
+
+volumes:
+  miccheck-qa-pgdata:
+    name: miccheck-qa-pgdata

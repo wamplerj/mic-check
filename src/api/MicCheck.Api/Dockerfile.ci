@@ -1,0 +1,23 @@
+# Self-contained CI/QA image for MicCheck.Api. Unlike the dev Dockerfile
+# (which expects a host-published /app to be bind-mounted), this builds the
+# app inside the image so it can be pushed to a registry and run standalone.
+#
+# Build context must be the repo root (needs ServiceDefaults + the API project):
+#   docker build -f src/api/MicCheck.Api/Dockerfile.ci -t miccheck-api:qa .
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY src/MicCheck.ServiceDefaults/MicCheck.ServiceDefaults.csproj src/MicCheck.ServiceDefaults/
+COPY src/api/MicCheck.Api/MicCheck.Api.csproj src/api/MicCheck.Api/
+RUN dotnet restore src/api/MicCheck.Api/MicCheck.Api.csproj
+
+COPY src/MicCheck.ServiceDefaults/ src/MicCheck.ServiceDefaults/
+COPY src/api/MicCheck.Api/ src/api/MicCheck.Api/
+RUN dotnet publish src/api/MicCheck.Api/MicCheck.Api.csproj -c Release -o /out --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /out .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "MicCheck.Api.dll"]

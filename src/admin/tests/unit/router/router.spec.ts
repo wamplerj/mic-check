@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import { setActivePinia, createPinia } from 'pinia';
-import { setAuthTokens, clearAuthTokens } from '@/api/client';
+import { clearAuthTokens } from '@/api/client';
+import { authGuard } from '@/router';
 
 // Minimal stub components for route testing
 const Stub = { template: '<div />' };
@@ -15,11 +16,17 @@ jest.mock('@/api/client', () => ({
 import { getAccessToken } from '@/api/client';
 
 function buildRouter() {
-  return createRouter({
+  const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/login', name: 'Login', component: Stub, meta: { public: true } },
       { path: '/register', name: 'Register', component: Stub, meta: { public: true } },
+      {
+        path: '/accept-invite/:token',
+        name: 'AcceptInvite',
+        component: Stub,
+        meta: { public: true, allowAuthenticated: true },
+      },
       {
         path: '/',
         component: Stub,
@@ -31,6 +38,9 @@ function buildRouter() {
       },
     ],
   });
+  // Wire up the real guard exported by the app router, not a re-implementation.
+  router.beforeEach(authGuard);
+  return router;
 }
 
 describe('Router auth guard', () => {
@@ -44,21 +54,10 @@ describe('Router auth guard', () => {
   });
 
   describe('WhenUnauthenticatedUserNavigatesToProtectedRoute', () => {
-    it('ThenTheyAreRedirectedToLogin', async () => {
+    it('ThenTheyAreRedirectedToLoginWithARedirectQuery', async () => {
       jest.mocked(getAccessToken).mockReturnValue(null);
 
       const router = buildRouter();
-
-      // Wire up the same guard logic as the real router
-      router.beforeEach((to) => {
-        const isAuthenticated = !!getAccessToken();
-        const requiresAuth = to.matched.some((r) => r.meta.requiresAuth);
-        const isPublic = to.matched.some((r) => r.meta.public);
-        if (requiresAuth && !isAuthenticated) return { name: 'Login', query: { redirect: to.fullPath } };
-        if (isPublic && isAuthenticated) return { name: 'Dashboard' };
-        return true;
-      });
-
       await router.push('/features');
 
       expect(router.currentRoute.value.name).toBe('Login');
@@ -71,17 +70,6 @@ describe('Router auth guard', () => {
       jest.mocked(getAccessToken).mockReturnValue('valid-token');
 
       const router = buildRouter();
-
-      router.beforeEach((to) => {
-        const isAuthenticated = !!getAccessToken();
-        const requiresAuth = to.matched.some((r) => r.meta.requiresAuth);
-        const isPublic = to.matched.some((r) => r.meta.public);
-        if (requiresAuth && !isAuthenticated) return { name: 'Login', query: { redirect: to.fullPath } };
-        if (isPublic && isAuthenticated) return { name: 'Dashboard' };
-        return true;
-      });
-
-      // Start authenticated on dashboard, then try to go to login
       await router.push('/');
       await router.push('/login');
 
@@ -94,19 +82,55 @@ describe('Router auth guard', () => {
       jest.mocked(getAccessToken).mockReturnValue('valid-token');
 
       const router = buildRouter();
-
-      router.beforeEach((to) => {
-        const isAuthenticated = !!getAccessToken();
-        const requiresAuth = to.matched.some((r) => r.meta.requiresAuth);
-        const isPublic = to.matched.some((r) => r.meta.public);
-        if (requiresAuth && !isAuthenticated) return { name: 'Login', query: { redirect: to.fullPath } };
-        if (isPublic && isAuthenticated) return { name: 'Dashboard' };
-        return true;
-      });
-
       await router.push('/features');
 
       expect(router.currentRoute.value.name).toBe('Features');
+    });
+  });
+
+  describe('WhenUnauthenticatedUserNavigatesToAnAllowAuthenticatedRoute', () => {
+    it('ThenNavigationSucceeds', async () => {
+      jest.mocked(getAccessToken).mockReturnValue(null);
+
+      const router = buildRouter();
+      await router.push('/accept-invite/some-token');
+
+      expect(router.currentRoute.value.name).toBe('AcceptInvite');
+    });
+  });
+
+  describe('WhenAuthenticatedUserNavigatesToAnAllowAuthenticatedRoute', () => {
+    it('ThenTheyAreNotRedirectedToDashboard', async () => {
+      jest.mocked(getAccessToken).mockReturnValue('valid-token');
+
+      const router = buildRouter();
+      await router.push('/accept-invite/some-token');
+
+      expect(router.currentRoute.value.name).toBe('AcceptInvite');
+    });
+  });
+
+  describe('WhenAuthenticatedUserNavigatesToRegister', () => {
+    it('ThenTheyAreRedirectedToDashboardBecauseRegisterHasNoAllowAuthenticatedException', async () => {
+      jest.mocked(getAccessToken).mockReturnValue('valid-token');
+
+      const router = buildRouter();
+      await router.push('/');
+      await router.push('/register');
+
+      expect(router.currentRoute.value.name).toBe('Dashboard');
+    });
+  });
+
+  describe('WhenUnauthenticatedUserNavigatesToAProtectedRouteWithAQueryString', () => {
+    it('ThenTheFullPathIncludingTheQueryIsPreservedInTheRedirect', async () => {
+      jest.mocked(getAccessToken).mockReturnValue(null);
+
+      const router = buildRouter();
+      await router.push('/features?tag=beta');
+
+      expect(router.currentRoute.value.name).toBe('Login');
+      expect(router.currentRoute.value.query.redirect).toBe('/features?tag=beta');
     });
   });
 });

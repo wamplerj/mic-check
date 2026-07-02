@@ -1,0 +1,11 @@
+{
+  "name": "mic-check",
+  "private": true,
+  "description": "Repo-root package - hosts the Husky pre-push hook only.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

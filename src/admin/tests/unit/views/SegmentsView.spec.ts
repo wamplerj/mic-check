@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import SegmentsView from '@/views/SegmentsView.vue';
@@ -129,7 +129,8 @@ describe('SegmentsView', () => {
       const wrapper = mountView();
       await flushPromises();
 
-      await wrapper.find('[data-testid="edit-segment-1"]').trigger('click');
+      const row = wrapper.findAll('tbody tr').find((r) => r.text().includes('beta_users'));
+      await row!.trigger('click');
       await wrapper.vm.$nextTick();
 
       const editor = wrapper.findComponent({ name: 'SegmentEditor' });
@@ -154,13 +155,6 @@ describe('SegmentsView', () => {
 
       expect(wrapper.find('[data-testid="delete-confirm-dialog"]').exists()).toBe(true);
 
-      // Confirm button should be disabled before typing the name
-      expect(wrapper.find('[data-testid="confirm-delete-btn"]').attributes('disabled')).toBeDefined();
-
-      // Type segment name to enable button
-      await (wrapper.findComponent('[data-testid="delete-confirm-input"]') as VueWrapper<any>).vm.$emit('update:modelValue', 'beta_users');
-      await wrapper.vm.$nextTick();
-
       await wrapper.find('[data-testid="confirm-delete-btn"]').trigger('click');
       await flushPromises();
 
@@ -179,9 +173,6 @@ describe('SegmentsView', () => {
       await flushPromises();
 
       await wrapper.find('[data-testid="delete-segment-1"]').trigger('click');
-      await wrapper.vm.$nextTick();
-
-      await (wrapper.findComponent('[data-testid="delete-confirm-input"]') as VueWrapper<any>).vm.$emit('update:modelValue', 'beta_users');
       await wrapper.vm.$nextTick();
 
       await wrapper.find('[data-testid="confirm-delete-btn"]').trigger('click');

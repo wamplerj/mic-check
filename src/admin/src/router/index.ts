@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory, RouteLocationNormalized, RouteRecordRaw } from 'vue-router';
 import { getAccessToken } from '@/api/client';
 
 const routes: RouteRecordRaw[] = [
@@ -102,7 +102,7 @@ const router = createRouter({
 
 // ─── Auth Guard ───────────────────────────────────────────────────────────────
 
-router.beforeEach((to) => {
+export function authGuard(to: RouteLocationNormalized) {
   const isAuthenticated = !!getAccessToken();
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
   const isPublic = to.matched.some((record) => record.meta.public);
@@ -116,6 +116,8 @@ router.beforeEach((to) => {
   }
 
   return true;
-});
+}
+
+router.beforeEach(authGuard);
 
 export default router;

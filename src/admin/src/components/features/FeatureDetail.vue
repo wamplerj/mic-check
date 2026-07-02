@@ -274,12 +274,22 @@
                   data-testid="settings-default-enabled-toggle"
                 />
               </div>
+              <v-text-field
+                v-model="deleteConfirmName"
+                :label="`Type '${feature?.name}' to confirm deletion`"
+                variant="outlined"
+                density="compact"
+                class="mb-3"
+                hide-details
+                data-testid="delete-confirm-input"
+              />
               <div class="d-flex justify-space-between align-center">
                 <v-btn
                   color="error"
                   variant="text"
                   size="small"
                   :loading="isDeleting"
+                  :disabled="deleteConfirmName !== feature?.name"
                   data-testid="delete-feature-btn"
                   @click="onDelete"
                 >
@@ -440,6 +450,8 @@ const settingsForm = ref({
   defaultEnabled: false,
 });
 
+const deleteConfirmName = ref('');
+
 const rules = {
   required: (v: string) => !!v || 'Required',
   nameFormat: (v: string) =>
@@ -481,6 +493,7 @@ watch(
       newSegmentId.value = null;
       newSegmentEnabled.value = true;
       newSegmentPriority.value = 1;
+      deleteConfirmName.value = '';
       syncSettingsForm(props.feature);
 
       editedValue.value = props.featureState?.value ?? null;

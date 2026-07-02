@@ -1,0 +1,48 @@
+# CI/CD pipeline for MicCheck. Read by both Gitea Actions and GitHub Actions
+# (both look under .github/workflows/). Every non-checkout step just invokes a
+# bash script under scripts/ci/, so the entire pipeline is reproducible by
+# running the same scripts locally - no marketplace build/test/push actions.
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ${{ secrets.REGISTRY }}
+      REGISTRY_OWNER: ${{ secrets.REGISTRY_OWNER }}
+      REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+      REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: ./scripts/ci/build.sh
+
+      - name: Test
+        run: ./scripts/ci/test.sh
+
+      - name: Build Docker images
+        run: ./scripts/ci/docker-build.sh
+
+      - name: Push Docker images
+        run: ./scripts/ci/docker-push.sh
+
+  deploy-qa:
+    needs: build-and-push
+    runs-on: [self-hosted, qa]
+    env:
+      REGISTRY: ${{ secrets.REGISTRY }}
+      REGISTRY_OWNER: ${{ secrets.REGISTRY_OWNER }}
+      REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+      REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      QA_ADMIN_PORT: ${{ vars.QA_ADMIN_PORT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to QA
+        run: ./scripts/ci/deploy-qa.sh

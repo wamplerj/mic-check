@@ -102,9 +102,10 @@ describe('SettingsView', () => {
   });
 
   describe('WhenInviteMemberIsClicked', () => {
-    it('ThenInviteOrganizationMemberIsCalledWithUserId', async () => {
-      jest.mocked(orgsApi.inviteOrganizationMember).mockResolvedValue(undefined);
-      jest.mocked(orgsApi.listOrganizationMembers).mockResolvedValue([{ userId: 42, firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com', role: 'User', lastLoginAt: null }]);
+    it('ThenInviteOrganizationMembersByEmailIsCalledWithEmail', async () => {
+      jest.mocked(orgsApi.inviteOrganizationMembersByEmail).mockResolvedValue([
+        { email: 'jane@example.com', success: true, error: null },
+      ]);
 
       const contextStore = useContextStore();
       contextStore.setOrganization(mockOrg);
@@ -112,13 +113,19 @@ describe('SettingsView', () => {
       const wrapper = mountView();
       await flushPromises();
 
-      await (wrapper.findComponent('[data-testid="invite-user-id-input"]') as VueWrapper<any>).vm.$emit('update:modelValue', '42');
+      await wrapper.find('[data-testid="add-member-btn"]').trigger('click');
       await wrapper.vm.$nextTick();
 
-      await wrapper.find('[data-testid="invite-member-btn"]').trigger('click');
+      await (wrapper.findComponent('[data-testid="add-member-email-0"]') as VueWrapper<any>).vm.$emit('update:modelValue', 'jane@example.com');
+      await wrapper.vm.$nextTick();
+
+      await wrapper.find('[data-testid="confirm-add-members-btn"]').trigger('click');
       await flushPromises();
 
-      expect(orgsApi.inviteOrganizationMember).toHaveBeenCalledWith(mockOrg.id, { userId: 42, role: 'User' });
+      expect(orgsApi.inviteOrganizationMembersByEmail).toHaveBeenCalledWith(
+        mockOrg.id,
+        { invites: [{ email: 'jane@example.com', role: 'User' }] },
+      );
     });
   });
 
@@ -136,6 +143,8 @@ describe('SettingsView', () => {
       expect(wrapper.find('[data-testid="member-row-5"]').exists()).toBe(true);
 
       await wrapper.find('[data-testid="remove-member-5"]').trigger('click');
+      await wrapper.vm.$nextTick();
+      await wrapper.find('[data-testid="confirm-delete-btn"]').trigger('click');
       await flushPromises();
 
       expect(orgsApi.removeOrganizationMember).toHaveBeenCalledWith(mockOrg.id, 5);
@@ -261,6 +270,8 @@ describe('SettingsView', () => {
       await wrapper.vm.$nextTick();
 
       await wrapper.find('[data-testid="remove-permission-5"]').trigger('click');
+      await wrapper.vm.$nextTick();
+      await wrapper.find('[data-testid="confirm-delete-btn"]').trigger('click');
       await flushPromises();
 
       expect(projectsApi.removeProjectUserPermissions).toHaveBeenCalledWith(mockProject.id, 5);
@@ -341,9 +352,6 @@ describe('SettingsView', () => {
       await wrapper.vm.$nextTick();
 
       await wrapper.find('[data-testid="delete-env-100"]').trigger('click');
-      await wrapper.vm.$nextTick();
-
-      await (wrapper.findComponent('[data-testid="delete-env-confirm-input"]') as VueWrapper<any>).vm.$emit('update:modelValue', 'Development');
       await wrapper.vm.$nextTick();
 
       await wrapper.find('[data-testid="confirm-delete-env-btn"]').trigger('click');
@@ -471,6 +479,8 @@ describe('SettingsView', () => {
       await wrapper.vm.$nextTick();
 
       await wrapper.find('[data-testid="delete-api-key-1"]').trigger('click');
+      await wrapper.vm.$nextTick();
+      await wrapper.find('[data-testid="confirm-delete-btn"]').trigger('click');
       await flushPromises();
 
       expect(apiKeysApi.deleteApiKey).toHaveBeenCalledWith(mockOrg.id, 1);
