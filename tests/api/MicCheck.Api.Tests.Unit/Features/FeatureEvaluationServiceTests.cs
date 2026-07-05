@@ -3,7 +3,7 @@ using MicCheck.Api.Data;
 using MicCheck.Api.Features;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Segments;
-using Microsoft.EntityFrameworkCore;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using NUnit.Framework;
@@ -14,7 +14,13 @@ namespace MicCheck.Api.Tests.Unit.Features;
 [TestFixture]
 public class FeatureEvaluationServiceTests
 {
-    private MicCheckDbContext _db = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<AppEnvironment> _environments = null!;
+    private List<Feature> _features = null!;
+    private List<FeatureState> _featureStates = null!;
+    private List<Identity> _identities = null!;
+    private List<Segment> _segments = null!;
+    private List<FeatureSegment> _featureSegments = null!;
     private FeatureEvaluationService _service = null!;
     private FeatureUsageMetrics _usageMetrics = null!;
     private const int EnvironmentId = 1;
@@ -23,52 +29,49 @@ public class FeatureEvaluationServiceTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
+        _db = new Mock<IMicCheckDbContext>();
+
+        _environments = [new AppEnvironment { Id = EnvironmentId, Name = "Production", ApiKey = "env-key-test", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow }];
+        var environmentsSet = MockDbSetFactory.Create(_environments);
+        environmentsSet.Setup(m => m.FindAsync(It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((object[] keys, CancellationToken _) => _environments.FirstOrDefault(e => e.Id == (int)keys[0]));
+        _db.Setup(c => c.Environments).Returns(environmentsSet.Object);
+
+        _features = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Features, _features);
+        _featureStates = [];
+        _db.SetupDbSet(c => c.FeatureStates, _featureStates);
+        _identities = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Identities, _identities);
+        _db.SetupDbSet(c => c.IdentityTraits, []);
+        _segments = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Segments, _segments);
+        _db.SetupDbSet(c => c.SegmentRules, []);
+        _db.SetupDbSet(c => c.SegmentConditions, []);
+        _featureSegments = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.FeatureSegments, _featureSegments);
 
         var meterFactory = new Mock<IMeterFactory>();
         meterFactory.Setup(f => f.Create(It.IsAny<MeterOptions>())).Returns(new Meter("test"));
         _usageMetrics = new FeatureUsageMetrics(meterFactory.Object);
 
         var cache = new FlagCache(new MemoryCache(new MemoryCacheOptions()));
-        _service = new FeatureEvaluationService(_db, new SegmentEvaluator(), cache, _usageMetrics);
-
-        SeedBaseData();
+        _service = new FeatureEvaluationService(_db.Object, new SegmentEvaluator(), cache, _usageMetrics);
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        _db.Dispose();
-        _usageMetrics.Dispose();
-    }
+    public void TearDown() => _usageMetrics.Dispose();
 
-    private void SeedBaseData()
+    private Feature AddFeature(string name, bool defaultEnabled = false)
     {
-        _db.Environments.Add(new AppEnvironment
-        {
-            Id = EnvironmentId,
-            Name = "Production",
-            ApiKey = "env-key-test",
-            ProjectId = ProjectId,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.SaveChanges();
-    }
-
-    private MicCheck.Api.Features.Feature AddFeature(string name, bool defaultEnabled = false)
-    {
-        var feature = new MicCheck.Api.Features.Feature
+        var feature = new Feature
         {
             Name = name,
             ProjectId = ProjectId,
             CreatedAt = DateTimeOffset.UtcNow,
             DefaultEnabled = defaultEnabled
         };
-        _db.Features.Add(feature);
-        _db.SaveChanges();
+        _db.Object.Features.Add(feature);
         return feature;
     }
 
@@ -83,8 +86,7 @@ public class FeatureEvaluationServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
-        _db.FeatureStates.Add(fs);
-        _db.SaveChanges();
+        _featureStates.Add(fs);
         return fs;
     }
 
@@ -136,10 +138,9 @@ public class FeatureEvaluationServiceTests
             EnvironmentId = EnvironmentId,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        _db.Identities.Add(identity);
-        _db.SaveChanges();
+        _db.Object.Identities.Add(identity);
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = EnvironmentId,
@@ -149,7 +150,6 @@ public class FeatureEvaluationServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var results = await _service.EvaluateForIdentityAsync(EnvironmentId, "user-vip");
 
@@ -161,11 +161,10 @@ public class FeatureEvaluationServiceTests
     public async Task WhenSegmentMatchesAndHasOverride_ThenSegmentOverrideIsUsed()
     {
         var feature = AddFeature("premium_feature");
-        var envDefault = AddEnvironmentDefault(feature.Id, enabled: false);
+        AddEnvironmentDefault(feature.Id, enabled: false);
 
         var segment = new Segment { Name = "Premium Users", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
-        _db.Segments.Add(segment);
-        _db.SaveChanges();
+        _db.Object.Segments.Add(segment);
 
         var rule = new SegmentRule { SegmentId = segment.Id, Type = SegmentRuleType.All };
         rule.Conditions.Add(new SegmentCondition
@@ -175,8 +174,7 @@ public class FeatureEvaluationServiceTests
             Operator = SegmentConditionOperator.Equal,
             Value = "premium"
         });
-        _db.SegmentRules.Add(rule);
-        _db.SaveChanges();
+        segment.Rules.Add(rule);
 
         var featureSegment = new FeatureSegment
         {
@@ -185,10 +183,9 @@ public class FeatureEvaluationServiceTests
             EnvironmentId = EnvironmentId,
             Priority = 1
         };
-        _db.FeatureSegments.Add(featureSegment);
-        _db.SaveChanges();
+        _db.Object.FeatureSegments.Add(featureSegment);
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = EnvironmentId,
@@ -198,7 +195,6 @@ public class FeatureEvaluationServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var results = await _service.EvaluateForIdentityAsync(
             EnvironmentId, "user-123",
@@ -215,8 +211,7 @@ public class FeatureEvaluationServiceTests
         AddEnvironmentDefault(feature.Id, enabled: false, value: "default-value");
 
         var segment = new Segment { Name = "Premium Users", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
-        _db.Segments.Add(segment);
-        _db.SaveChanges();
+        _db.Object.Segments.Add(segment);
 
         var rule = new SegmentRule { SegmentId = segment.Id, Type = SegmentRuleType.All };
         rule.Conditions.Add(new SegmentCondition
@@ -226,8 +221,7 @@ public class FeatureEvaluationServiceTests
             Operator = SegmentConditionOperator.Equal,
             Value = "premium"
         });
-        _db.SegmentRules.Add(rule);
-        _db.SaveChanges();
+        segment.Rules.Add(rule);
 
         var featureSegment = new FeatureSegment
         {
@@ -236,10 +230,9 @@ public class FeatureEvaluationServiceTests
             EnvironmentId = EnvironmentId,
             Priority = 1
         };
-        _db.FeatureSegments.Add(featureSegment);
-        _db.SaveChanges();
+        _db.Object.FeatureSegments.Add(featureSegment);
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = EnvironmentId,
@@ -249,7 +242,6 @@ public class FeatureEvaluationServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var results = await _service.EvaluateForIdentityAsync(
             EnvironmentId, "user-123",
@@ -266,8 +258,7 @@ public class FeatureEvaluationServiceTests
         AddEnvironmentDefault(feature.Id, enabled: false);
 
         var segment = new Segment { Name = "All Users", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
-        _db.Segments.Add(segment);
-        _db.SaveChanges();
+        _db.Object.Segments.Add(segment);
 
         var rule = new SegmentRule { SegmentId = segment.Id, Type = SegmentRuleType.All };
         rule.Conditions.Add(new SegmentCondition
@@ -277,8 +268,7 @@ public class FeatureEvaluationServiceTests
             Operator = SegmentConditionOperator.IsSet,
             Value = ""
         });
-        _db.SegmentRules.Add(rule);
-        _db.SaveChanges();
+        segment.Rules.Add(rule);
 
         var featureSegment = new FeatureSegment
         {
@@ -287,10 +277,9 @@ public class FeatureEvaluationServiceTests
             EnvironmentId = EnvironmentId,
             Priority = 1
         };
-        _db.FeatureSegments.Add(featureSegment);
-        _db.SaveChanges();
+        _db.Object.FeatureSegments.Add(featureSegment);
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = EnvironmentId,
@@ -307,8 +296,7 @@ public class FeatureEvaluationServiceTests
             EnvironmentId = EnvironmentId,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        _db.Identities.Add(identity);
-        _db.SaveChanges();
+        _db.Object.Identities.Add(identity);
 
         identity.Traits.Add(new IdentityTrait
         {
@@ -317,7 +305,7 @@ public class FeatureEvaluationServiceTests
             Value = "US"
         });
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = EnvironmentId,
@@ -327,7 +315,6 @@ public class FeatureEvaluationServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var results = await _service.EvaluateForIdentityAsync(
             EnvironmentId, "user-special",

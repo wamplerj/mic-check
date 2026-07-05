@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Common.Security.ApiKeys;
 
-public class ApiKeyService(MicCheckDbContext db)
+public class ApiKeyService(IMicCheckDbContext db)
 {
-    public async Task<(ApiKey Key, string RawKey)> CreateAsync(
+    public async Task<ApiKeyCreationResult> CreateAsync(
         int organizationId, string name, DateTimeOffset? expiresAt, CancellationToken ct = default)
     {
         var rawKey = ApiKeyHasher.GenerateKey();
@@ -26,7 +26,7 @@ public class ApiKeyService(MicCheckDbContext db)
         db.ApiKeys.Add(apiKey);
         await db.SaveChangesAsync(ct);
 
-        return (apiKey, rawKey);
+        return new ApiKeyCreationResult(apiKey, rawKey);
     }
 
     public async Task<IReadOnlyList<ApiKey>> ListAsync(int organizationId, CancellationToken ct = default)
@@ -48,3 +48,5 @@ public class ApiKeyService(MicCheckDbContext db)
         await db.SaveChangesAsync(ct);
     }
 }
+
+public record ApiKeyCreationResult(ApiKey Key, string RawKey);

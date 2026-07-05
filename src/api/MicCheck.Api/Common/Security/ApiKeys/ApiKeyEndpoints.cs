@@ -13,10 +13,9 @@ public static class ApiKeyEndpoints
 
         group.MapPost("/api-keys", async (int organizationId, CreateApiKeyRequest request, ApiKeyService apiKeyService, CancellationToken ct) =>
         {
-            var (key, rawKey) = await apiKeyService.CreateAsync(
-                organizationId, request.Name, request.ExpiresAt, ct);
+            var result = await apiKeyService.CreateAsync(organizationId, request.Name, request.ExpiresAt, ct);
 
-            return Results.Ok(new CreateApiKeyResponse(key.Id, key.Name, rawKey, key.Prefix, key.ExpiresAt));
+            return Results.Ok(new CreateApiKeyResponse(result.Key.Id, result.Key.Name, result.RawKey, result.Key.Prefix, result.Key.ExpiresAt));
 
         }).WithName("CreateApiKey");
 

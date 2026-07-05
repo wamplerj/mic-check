@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Identities;
 
-public class IdentityResolutionService(MicCheckDbContext db)
+public class IdentityResolutionService(IMicCheckDbContext db)
 {
     public async Task<Identity> ResolveAsync(
         int environmentId,

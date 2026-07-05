@@ -1,6 +1,8 @@
 using MicCheck.Api.Data;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using MicCheck.Api.Webhooks;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using NUnit.Framework;
 
 namespace MicCheck.Api.Tests.Unit.Webhooks;
@@ -24,28 +26,33 @@ public class WebhookRetryTests
         Assert.That(delay.TotalMinutes, Is.EqualTo(30));
     }
 
+    private static Mock<IMicCheckDbContext> CreateDb(List<WebhookDeliveryLog> deliveryLogs)
+    {
+        var db = new Mock<IMicCheckDbContext>();
+        db.SetupDbSet(c => c.WebhookDeliveryLogs, deliveryLogs);
+        return db;
+    }
+
     [Test]
     public async Task WhenFailedDeliveryIsOldEnough_ThenItIsEligibleForRetry()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        using var db = new MicCheckDbContext(options);
-
-        db.WebhookDeliveryLogs.Add(new WebhookDeliveryLog
+        var deliveryLogs = new List<WebhookDeliveryLog>
         {
-            WebhookId = 1,
-            EventType = WebhookEventTypes.FlagUpdated,
-            PayloadJson = """{"event_type":"FLAG_UPDATED","data":{}}""",
-            Success = false,
-            AttemptNumber = 1,
-            AttemptedAt = DateTimeOffset.UtcNow.AddMinutes(-6),
-            Duration = TimeSpan.FromMilliseconds(100)
-        });
-        await db.SaveChangesAsync();
+            new()
+            {
+                WebhookId = 1,
+                EventType = WebhookEventTypes.FlagUpdated,
+                PayloadJson = """{"event_type":"FLAG_UPDATED","data":{}}""",
+                Success = false,
+                AttemptNumber = 1,
+                AttemptedAt = DateTimeOffset.UtcNow.AddMinutes(-6),
+                Duration = TimeSpan.FromMilliseconds(100)
+            }
+        };
+        var db = CreateDb(deliveryLogs);
 
         var retryAfter = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5);
-        var eligible = await db.WebhookDeliveryLogs
+        var eligible = await db.Object.WebhookDeliveryLogs
             .Where(d => !d.Success && d.AttemptNumber == 1 && d.AttemptedAt <= retryAfter)
             .ToListAsync();
 
@@ -55,25 +62,23 @@ public class WebhookRetryTests
     [Test]
     public async Task WhenFailedDeliveryIsTooRecent_ThenItIsNotEligibleForRetry()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        using var db = new MicCheckDbContext(options);
-
-        db.WebhookDeliveryLogs.Add(new WebhookDeliveryLog
+        var deliveryLogs = new List<WebhookDeliveryLog>
         {
-            WebhookId = 1,
-            EventType = WebhookEventTypes.FlagUpdated,
-            PayloadJson = """{"event_type":"FLAG_UPDATED","data":{}}""",
-            Success = false,
-            AttemptNumber = 1,
-            AttemptedAt = DateTimeOffset.UtcNow.AddMinutes(-1),
-            Duration = TimeSpan.FromMilliseconds(100)
-        });
-        await db.SaveChangesAsync();
+            new()
+            {
+                WebhookId = 1,
+                EventType = WebhookEventTypes.FlagUpdated,
+                PayloadJson = """{"event_type":"FLAG_UPDATED","data":{}}""",
+                Success = false,
+                AttemptNumber = 1,
+                AttemptedAt = DateTimeOffset.UtcNow.AddMinutes(-1),
+                Duration = TimeSpan.FromMilliseconds(100)
+            }
+        };
+        var db = CreateDb(deliveryLogs);
 
         var retryAfter = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5);
-        var eligible = await db.WebhookDeliveryLogs
+        var eligible = await db.Object.WebhookDeliveryLogs
             .Where(d => !d.Success && d.AttemptNumber == 1 && d.AttemptedAt <= retryAfter)
             .ToListAsync();
 
@@ -83,37 +88,34 @@ public class WebhookRetryTests
     [Test]
     public async Task WhenDeliveryHasAlreadyBeenRetried_ThenItIsNotRetriedAgain()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        using var db = new MicCheckDbContext(options);
-
         var firstAttemptedAt = DateTimeOffset.UtcNow.AddMinutes(-10);
 
-        db.WebhookDeliveryLogs.Add(new WebhookDeliveryLog
+        var deliveryLogs = new List<WebhookDeliveryLog>
         {
-            WebhookId = 1,
-            EventType = WebhookEventTypes.FlagUpdated,
-            PayloadJson = "{}",
-            Success = false,
-            AttemptNumber = 1,
-            AttemptedAt = firstAttemptedAt,
-            Duration = TimeSpan.Zero
-        });
+            new()
+            {
+                WebhookId = 1,
+                EventType = WebhookEventTypes.FlagUpdated,
+                PayloadJson = "{}",
+                Success = false,
+                AttemptNumber = 1,
+                AttemptedAt = firstAttemptedAt,
+                Duration = TimeSpan.Zero
+            },
+            new()
+            {
+                WebhookId = 1,
+                EventType = WebhookEventTypes.FlagUpdated,
+                PayloadJson = "{}",
+                Success = false,
+                AttemptNumber = 2,
+                AttemptedAt = firstAttemptedAt.AddMinutes(5),
+                Duration = TimeSpan.Zero
+            }
+        };
+        var db = CreateDb(deliveryLogs);
 
-        db.WebhookDeliveryLogs.Add(new WebhookDeliveryLog
-        {
-            WebhookId = 1,
-            EventType = WebhookEventTypes.FlagUpdated,
-            PayloadJson = "{}",
-            Success = false,
-            AttemptNumber = 2,
-            AttemptedAt = firstAttemptedAt.AddMinutes(5),
-            Duration = TimeSpan.Zero
-        });
-        await db.SaveChangesAsync();
-
-        var alreadyRetried = await db.WebhookDeliveryLogs
+        var alreadyRetried = await db.Object.WebhookDeliveryLogs
             .AnyAsync(d => d.WebhookId == 1 && d.AttemptNumber == 2 && d.AttemptedAt > firstAttemptedAt);
 
         Assert.That(alreadyRetried, Is.True);

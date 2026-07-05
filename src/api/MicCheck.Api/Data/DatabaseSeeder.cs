@@ -7,7 +7,7 @@ using AppEnvironment = MicCheck.Api.Environments.Environment;
 
 namespace MicCheck.Api.Data;
 
-public class DatabaseSeeder
+public class DatabaseSeeder(MicCheckDbContext db, IPasswordHasher<User> passwordHasher)
 {
     /// <summary>
     /// Deterministic credentials for the development/QA seed admin user. Only ever created when
@@ -15,25 +15,17 @@ public class DatabaseSeeder
     /// Used by the API integration suite and the Playwright admin e2e suite to authenticate
     /// without depending on per-run registration.
     /// </summary>
-    public const string SeedAdminEmail = "admin@miccheck.local";
-    public const string SeedAdminPassword = "MicCheckQa!2026";
+    private const string SeedAdminEmail = "admin@miccheck.local";
+
+    private const string SeedAdminPassword = "MicCheckQa!2026";
 
     /// <summary>Deterministic environment key for the seeded Development environment, so
     /// HTTP-only integration/e2e tests can read flags without a direct DB connection.</summary>
-    public const string SeedDevelopmentEnvironmentKey = "env-qa-development";
-
-    private readonly MicCheckDbContext _db;
-    private readonly IPasswordHasher<User> _passwordHasher;
-
-    public DatabaseSeeder(MicCheckDbContext db, IPasswordHasher<User> passwordHasher)
-    {
-        _db = db;
-        _passwordHasher = passwordHasher;
-    }
+    private const string SeedDevelopmentEnvironmentKey = "env-qa-development";
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        if (await _db.Organizations.AnyAsync(ct))
+        if (await db.Organizations.AnyAsync(ct))
             return;
 
         var organization = new Organization
@@ -41,8 +33,8 @@ public class DatabaseSeeder
             Name = "Default",
             CreatedAt = DateTimeOffset.UtcNow
         };
-        _db.Organizations.Add(organization);
-        await _db.SaveChangesAsync(ct);
+        db.Organizations.Add(organization);
+        await db.SaveChangesAsync(ct);
 
         var project = new Project
         {
@@ -50,13 +42,13 @@ public class DatabaseSeeder
             OrganizationId = organization.Id,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        _db.Projects.Add(project);
-        await _db.SaveChangesAsync(ct);
+        db.Projects.Add(project);
+        await db.SaveChangesAsync(ct);
 
         var environmentNames = new[] { "Development", "Staging", "Production" };
         foreach (var name in environmentNames)
         {
-            _db.Environments.Add(new AppEnvironment
+            db.Environments.Add(new AppEnvironment
             {
                 Name = name,
                 ApiKey = name == "Development" ? SeedDevelopmentEnvironmentKey : $"env-{Guid.NewGuid():N}",
@@ -65,7 +57,7 @@ public class DatabaseSeeder
             });
         }
 
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
 
         var adminUser = new User
         {
@@ -76,17 +68,17 @@ public class DatabaseSeeder
             CreatedAt = DateTimeOffset.UtcNow,
             PasswordHash = string.Empty
         };
-        adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, SeedAdminPassword);
-        _db.Users.Add(adminUser);
-        await _db.SaveChangesAsync(ct);
+        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, SeedAdminPassword);
+        db.Users.Add(adminUser);
+        await db.SaveChangesAsync(ct);
 
-        _db.OrganizationUsers.Add(new OrganizationUser
+        db.OrganizationUsers.Add(new OrganizationUser
         {
             OrganizationId = organization.Id,
             UserId = adminUser.Id,
             Role = OrganizationRole.Admin,
             IsPrimary = true
         });
-        await _db.SaveChangesAsync(ct);
+        await db.SaveChangesAsync(ct);
     }
 }

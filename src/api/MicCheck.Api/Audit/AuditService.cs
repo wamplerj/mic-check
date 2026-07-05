@@ -4,7 +4,7 @@ using MicCheck.Api.Webhooks;
 
 namespace MicCheck.Api.Audit;
 
-public class AuditService(MicCheckDbContext db, IHttpContextAccessor httpContextAccessor, WebhookQueue webhookQueue)
+public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContextAccessor, WebhookQueue webhookQueue)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

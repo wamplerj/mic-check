@@ -2,9 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using MicCheck.Api.Common.Security.Authorization;
 using MicCheck.Api.Data;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 
@@ -13,24 +13,20 @@ namespace MicCheck.Api.Tests.Unit.Common.Security.Authorization;
 [TestFixture]
 public class ProjectPermissionRequirementHandlerTests
 {
-    private MicCheckDbContext _db = null!;
+    private List<UserProjectPermission> _userProjectPermissions = null!;
     private Mock<IHttpContextAccessor> _httpContextAccessor = null!;
     private ProjectPermissionRequirementHandler _handler = null!;
 
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
+        var db = new Mock<IMicCheckDbContext>();
+        _userProjectPermissions = [];
+        db.SetupDbSet(c => c.UserProjectPermissions, _userProjectPermissions);
 
         _httpContextAccessor = new Mock<IHttpContextAccessor>();
-        _handler = new ProjectPermissionRequirementHandler(_db, _httpContextAccessor.Object);
+        _handler = new ProjectPermissionRequirementHandler(db.Object, _httpContextAccessor.Object);
     }
-
-    [TearDown]
-    public void TearDown() => _db.Dispose();
 
     private static AuthorizationHandlerContext CreateContext(
         ClaimsPrincipal user,
@@ -69,13 +65,12 @@ public class ProjectPermissionRequirementHandlerTests
     [Test]
     public async Task WhenUserHasRequiredPermission_ThenRequirementSucceeds()
     {
-        _db.UserProjectPermissions.Add(new UserProjectPermission
+        _userProjectPermissions.Add(new UserProjectPermission
         {
             UserId = 1,
             ProjectId = 10,
             Permissions = [ProjectPermission.ViewProject]
         });
-        await _db.SaveChangesAsync();
 
         SetupRouteProjectId(10);
 
@@ -92,14 +87,13 @@ public class ProjectPermissionRequirementHandlerTests
     [Test]
     public async Task WhenUserIsProjectAdmin_ThenAllPermissionsAreGranted()
     {
-        _db.UserProjectPermissions.Add(new UserProjectPermission
+        _userProjectPermissions.Add(new UserProjectPermission
         {
             UserId = 2,
             ProjectId = 20,
             IsAdmin = true,
             Permissions = []
         });
-        await _db.SaveChangesAsync();
 
         SetupRouteProjectId(20);
 
@@ -116,13 +110,12 @@ public class ProjectPermissionRequirementHandlerTests
     [Test]
     public async Task WhenUserDoesNotHaveRequiredPermission_ThenRequirementFails()
     {
-        _db.UserProjectPermissions.Add(new UserProjectPermission
+        _userProjectPermissions.Add(new UserProjectPermission
         {
             UserId = 3,
             ProjectId = 30,
             Permissions = [ProjectPermission.ViewProject]
         });
-        await _db.SaveChangesAsync();
 
         SetupRouteProjectId(30);
 

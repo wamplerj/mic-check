@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class TagService(MicCheckDbContext db)
+public class TagService(IMicCheckDbContext db)
 {
     public async Task<IReadOnlyList<Tag>> ListByProjectAsync(int projectId, CancellationToken ct = default)
     {

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class FeatureUsageQueryService(MicCheckDbContext db)
+public class FeatureUsageQueryService(IMicCheckDbContext db)
 {
     public async Task<DashboardUsageResponse> GetDashboardUsageAsync(int environmentId, int days, CancellationToken ct = default)
     {

@@ -39,11 +39,11 @@ public class UsersController(UserService userService) : ControllerBase
             string.IsNullOrWhiteSpace(request.Email))
             return BadRequest("First name, last name, and email are required.");
 
-        var (user, emailConflict) = await userService.UpdateProfileAsync(
+        var result = await userService.UpdateProfileAsync(
             userId.Value, request.FirstName.Trim(), request.LastName.Trim(), request.Email.Trim(), ct);
 
-        if (emailConflict) return Conflict("Email is already in use.");
-        return user is null ? NotFound() : Ok(UserResponse.From(user));
+        if (result.EmailConflict) return Conflict("Email is already in use.");
+        return result.User is null ? NotFound() : Ok(UserResponse.From(result.User));
     }
 
     [HttpPost("me/change-password")]

@@ -1,8 +1,10 @@
 using MicCheck.Api.Audit;
 using MicCheck.Api.Common;
 using MicCheck.Api.Data;
+using MicCheck.Api.Organizations;
+using MicCheck.Api.Projects;
 using MicCheck.Api.Segments;
-using Microsoft.EntityFrameworkCore;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using Moq;
 using NUnit.Framework;
 
@@ -11,7 +13,10 @@ namespace MicCheck.Api.Tests.Unit.Segments;
 [TestFixture]
 public class SegmentServiceTests
 {
-    private MicCheckDbContext _db = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<Segment> _segments = null!;
+    private List<SegmentRule> _segmentRules = null!;
+    private List<SegmentCondition> _segmentConditions = null!;
     private SegmentService _service = null!;
     private const int OrganizationId = 1;
     private const int ProjectId = 1;
@@ -19,43 +24,30 @@ public class SegmentServiceTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
+        _db = new Mock<IMicCheckDbContext>();
+
+        _db.SetupDbSet(c => c.Organizations, [
+            new Organization { Id = OrganizationId, Name = "Test Org", CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _db.SetupDbSet(c => c.Projects, [
+            new Project { Id = ProjectId, Name = "Test Project", OrganizationId = OrganizationId, CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _segments = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Segments, _segments);
+        _segmentRules = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.SegmentRules, _segmentRules);
+        _segmentConditions = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.SegmentConditions, _segmentConditions);
 
         var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
-        var auditService = new Mock<AuditService>(_db, null!, webhookQueue);
+        var auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
         auditService.Setup(a => a.LogAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
             It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _service = new SegmentService(_db, auditService.Object);
-
-        SeedBaseData();
-    }
-
-    [TearDown]
-    public void TearDown() => _db.Dispose();
-
-    private void SeedBaseData()
-    {
-        _db.Organizations.Add(new MicCheck.Api.Organizations.Organization
-        {
-            Id = OrganizationId,
-            Name = "Test Org",
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.Projects.Add(new MicCheck.Api.Projects.Project
-        {
-            Id = ProjectId,
-            Name = "Test Project",
-            OrganizationId = OrganizationId,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.SaveChanges();
+        _service = new SegmentService(_db.Object, auditService.Object);
     }
 
     private static SegmentRuleDefinition SingleConditionRule(
@@ -71,36 +63,33 @@ public class SegmentServiceTests
         var rules = new[] { SingleConditionRule() };
         var segment = await _service.CreateAsync(ProjectId, "Premium Users", rules);
 
-        var loaded = await _db.Segments
-            .Include(s => s.Rules)
-            .ThenInclude(r => r.Conditions)
-            .FirstAsync(s => s.Id == segment.Id);
+        var persistedRules = _segmentRules.Where(r => r.SegmentId == segment.Id).ToList();
 
-        Assert.That(loaded.Name, Is.EqualTo("Premium Users"));
-        Assert.That(loaded.Rules, Has.Count.EqualTo(1));
-        Assert.That(loaded.Rules.First().Conditions, Has.Count.EqualTo(1));
+        Assert.That(segment.Name, Is.EqualTo("Premium Users"));
+        Assert.That(persistedRules, Has.Count.EqualTo(1));
+        Assert.That(persistedRules[0].Conditions, Has.Count.EqualTo(1));
     }
 
     [Test]
-    public async Task WhenProjectHas100Segments_ThenCreatingAnotherThrowsDomainException()
+    public void WhenProjectHas100Segments_ThenCreatingAnotherThrowsDomainException()
     {
         for (var i = 0; i < 100; i++)
         {
-            _db.Segments.Add(new Segment
+            _segments.Add(new Segment
             {
+                Id = i + 1,
                 Name = $"segment_{i}",
                 ProjectId = ProjectId,
                 CreatedAt = DateTimeOffset.UtcNow
             });
         }
-        _db.SaveChanges();
 
         Assert.ThrowsAsync<DomainException>(() =>
             _service.CreateAsync(ProjectId, "overflow_segment", [SingleConditionRule()]));
     }
 
     [Test]
-    public async Task WhenSegmentHasMoreThan100Conditions_ThenCreatingThrowsDomainException()
+    public void WhenSegmentHasMoreThan100Conditions_ThenCreatingThrowsDomainException()
     {
         var conditions = Enumerable.Range(0, 101)
             .Select(i => new SegmentConditionDefinition($"prop_{i}", SegmentConditionOperator.Equal, "val"))
@@ -119,14 +108,11 @@ public class SegmentServiceTests
         var newRules = new[] { SingleConditionRule("country") };
         var updated = await _service.UpdateAsync(segment.Id, "Updated Segment", newRules);
 
-        var loaded = await _db.Segments
-            .Include(s => s.Rules)
-            .ThenInclude(r => r.Conditions)
-            .FirstAsync(s => s.Id == updated.Id);
+        var persistedRules = _segmentRules.Where(r => r.SegmentId == updated.Id).ToList();
 
-        Assert.That(loaded.Name, Is.EqualTo("Updated Segment"));
-        Assert.That(loaded.Rules, Has.Count.EqualTo(1));
-        Assert.That(loaded.Rules.First().Conditions.First().Property, Is.EqualTo("country"));
+        Assert.That(updated.Name, Is.EqualTo("Updated Segment"));
+        Assert.That(persistedRules, Has.Count.EqualTo(1));
+        Assert.That(persistedRules[0].Conditions.First().Property, Is.EqualTo("country"));
     }
 
     [Test]
@@ -136,7 +122,7 @@ public class SegmentServiceTests
 
         await _service.DeleteAsync(segment.Id);
 
-        var found = await _db.Segments.FirstOrDefaultAsync(s => s.Id == segment.Id);
+        var found = _segments.FirstOrDefault(s => s.Id == segment.Id);
         Assert.That(found, Is.Null);
     }
 

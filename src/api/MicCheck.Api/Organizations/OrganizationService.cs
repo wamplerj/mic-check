@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Organizations;
 
-public class OrganizationService(MicCheckDbContext db, AuditService auditService)
+public class OrganizationService(IMicCheckDbContext db, AuditService auditService)
 {
     public async Task<IReadOnlyList<(Organization Org, bool IsPrimary)>> ListForUserAsync(int userId, CancellationToken ct = default)
     {

@@ -2,8 +2,8 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using MicCheck.Api.Data;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using MicCheck.Api.Webhooks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Moq.Protected;
@@ -52,28 +52,24 @@ public class WebhookDispatcherTests
     [Test]
     public async Task WhenDispatchingToActiveWebhook_ThenPayloadIsPostedWithSignatureHeader()
     {
-        var (db, factory, capturedRequests) = SetUpDispatcher(HttpStatusCode.OK);
+        var (db, webhooks, _, factory, capturedRequests) = SetUpDispatcher(HttpStatusCode.OK);
 
-        var org = new MicCheck.Api.Organizations.Organization { Name = "Org", CreatedAt = DateTimeOffset.UtcNow };
-        db.Organizations.Add(org);
-        db.SaveChanges();
-
-        db.Webhooks.Add(new Webhook
+        const int orgId = 1;
+        webhooks.Add(new Webhook
         {
             Url = "https://example.com/hook",
             Secret = "test-secret",
             Scope = WebhookScope.Organization,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Enabled = true,
             CreatedAt = DateTimeOffset.UtcNow
         });
-        db.SaveChanges();
 
-        var dispatcher = new WebhookDispatcher(db, factory, NullLogger<WebhookDispatcher>.Instance);
+        var dispatcher = new WebhookDispatcher(db.Object, factory, NullLogger<WebhookDispatcher>.Instance);
         var webhookEvent = new WebhookEvent
         {
             EventType = WebhookEventTypes.FlagUpdated,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Data = new { test = true }
         };
 
@@ -86,28 +82,24 @@ public class WebhookDispatcherTests
     [Test]
     public async Task WhenDispatchingToWebhookWithoutSecret_ThenNoSignatureHeaderIsAdded()
     {
-        var (db, factory, capturedRequests) = SetUpDispatcher(HttpStatusCode.OK);
+        var (db, webhooks, _, factory, capturedRequests) = SetUpDispatcher(HttpStatusCode.OK);
 
-        var org = new MicCheck.Api.Organizations.Organization { Name = "Org", CreatedAt = DateTimeOffset.UtcNow };
-        db.Organizations.Add(org);
-        db.SaveChanges();
-
-        db.Webhooks.Add(new Webhook
+        const int orgId = 1;
+        webhooks.Add(new Webhook
         {
             Url = "https://example.com/hook",
             Secret = null,
             Scope = WebhookScope.Organization,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Enabled = true,
             CreatedAt = DateTimeOffset.UtcNow
         });
-        db.SaveChanges();
 
-        var dispatcher = new WebhookDispatcher(db, factory, NullLogger<WebhookDispatcher>.Instance);
+        var dispatcher = new WebhookDispatcher(db.Object, factory, NullLogger<WebhookDispatcher>.Instance);
         await dispatcher.DispatchAsync(new WebhookEvent
         {
             EventType = WebhookEventTypes.FlagUpdated,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Data = new { }
         });
 
@@ -117,31 +109,27 @@ public class WebhookDispatcherTests
     [Test]
     public async Task WhenDeliverySucceeds_ThenDeliveryLogIsRecordedAsSuccess()
     {
-        var (db, factory, _) = SetUpDispatcher(HttpStatusCode.OK);
+        var (db, webhooks, deliveryLogs, factory, _) = SetUpDispatcher(HttpStatusCode.OK);
 
-        var org = new MicCheck.Api.Organizations.Organization { Name = "Org", CreatedAt = DateTimeOffset.UtcNow };
-        db.Organizations.Add(org);
-        db.SaveChanges();
-
-        db.Webhooks.Add(new Webhook
+        const int orgId = 1;
+        webhooks.Add(new Webhook
         {
             Url = "https://example.com/hook",
             Scope = WebhookScope.Organization,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Enabled = true,
             CreatedAt = DateTimeOffset.UtcNow
         });
-        db.SaveChanges();
 
-        var dispatcher = new WebhookDispatcher(db, factory, NullLogger<WebhookDispatcher>.Instance);
+        var dispatcher = new WebhookDispatcher(db.Object, factory, NullLogger<WebhookDispatcher>.Instance);
         await dispatcher.DispatchAsync(new WebhookEvent
         {
             EventType = WebhookEventTypes.FlagUpdated,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Data = new { }
         });
 
-        var log = db.WebhookDeliveryLogs.First();
+        var log = deliveryLogs.First();
         Assert.That(log.Success, Is.True);
         Assert.That(log.ResponseStatusCode, Is.EqualTo(200));
         Assert.That(log.AttemptNumber, Is.EqualTo(1));
@@ -150,31 +138,27 @@ public class WebhookDispatcherTests
     [Test]
     public async Task WhenDeliveryFails_ThenDeliveryLogIsRecordedAsFailure()
     {
-        var (db, factory, _) = SetUpDispatcher(HttpStatusCode.InternalServerError);
+        var (db, webhooks, deliveryLogs, factory, _) = SetUpDispatcher(HttpStatusCode.InternalServerError);
 
-        var org = new MicCheck.Api.Organizations.Organization { Name = "Org", CreatedAt = DateTimeOffset.UtcNow };
-        db.Organizations.Add(org);
-        db.SaveChanges();
-
-        db.Webhooks.Add(new Webhook
+        const int orgId = 1;
+        webhooks.Add(new Webhook
         {
             Url = "https://example.com/hook",
             Scope = WebhookScope.Organization,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Enabled = true,
             CreatedAt = DateTimeOffset.UtcNow
         });
-        db.SaveChanges();
 
-        var dispatcher = new WebhookDispatcher(db, factory, NullLogger<WebhookDispatcher>.Instance);
+        var dispatcher = new WebhookDispatcher(db.Object, factory, NullLogger<WebhookDispatcher>.Instance);
         await dispatcher.DispatchAsync(new WebhookEvent
         {
             EventType = WebhookEventTypes.FlagUpdated,
-            OrganizationId = org.Id,
+            OrganizationId = orgId,
             Data = new { }
         });
 
-        var log = db.WebhookDeliveryLogs.First();
+        var log = deliveryLogs.First();
         Assert.That(log.Success, Is.False);
         Assert.That(log.ResponseStatusCode, Is.EqualTo(500));
     }
@@ -182,9 +166,9 @@ public class WebhookDispatcherTests
     [Test]
     public async Task WhenNoWebhooksAreRegistered_ThenNoDeliveryLogsAreCreated()
     {
-        var (db, factory, _) = SetUpDispatcher(HttpStatusCode.OK);
+        var (db, _, deliveryLogs, factory, _) = SetUpDispatcher(HttpStatusCode.OK);
 
-        var dispatcher = new WebhookDispatcher(db, factory, NullLogger<WebhookDispatcher>.Instance);
+        var dispatcher = new WebhookDispatcher(db.Object, factory, NullLogger<WebhookDispatcher>.Instance);
         await dispatcher.DispatchAsync(new WebhookEvent
         {
             EventType = WebhookEventTypes.FlagUpdated,
@@ -192,16 +176,17 @@ public class WebhookDispatcherTests
             Data = new { }
         });
 
-        Assert.That(db.WebhookDeliveryLogs.Count(), Is.EqualTo(0));
+        Assert.That(deliveryLogs, Is.Empty);
     }
 
-    private static (MicCheckDbContext Db, IHttpClientFactory Factory, List<HttpRequestMessage> CapturedRequests)
+    private static (Mock<IMicCheckDbContext> Db, List<Webhook> Webhooks, List<WebhookDeliveryLog> DeliveryLogs, IHttpClientFactory Factory, List<HttpRequestMessage> CapturedRequests)
         SetUpDispatcher(HttpStatusCode responseStatus)
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        var db = new MicCheckDbContext(options);
+        var db = new Mock<IMicCheckDbContext>();
+        var webhooks = new List<Webhook>();
+        db.SetupDbSetWithGeneratedIds(c => c.Webhooks, webhooks);
+        var deliveryLogs = new List<WebhookDeliveryLog>();
+        db.SetupDbSet(c => c.WebhookDeliveryLogs, deliveryLogs);
 
         var capturedRequests = new List<HttpRequestMessage>();
         var handler = new Mock<HttpMessageHandler>();
@@ -222,6 +207,6 @@ public class WebhookDispatcherTests
         var factory = new Mock<IHttpClientFactory>();
         factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
 
-        return (db, factory.Object, capturedRequests);
+        return (db, webhooks, deliveryLogs, factory.Object, capturedRequests);
     }
 }

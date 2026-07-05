@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MicCheck.Api.Features;
 
 public class FeatureEvaluationService(
-    MicCheckDbContext db,
+    IMicCheckDbContext db,
     SegmentEvaluator segmentEvaluator,
     FlagCache flagCache,
     FeatureUsageMetrics usageMetrics)

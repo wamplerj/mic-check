@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace MicCheck.Api.Common.Security.Authentication;
 
-public class ApiKeyAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, MicCheckDbContext db) 
+public class ApiKeyAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, IMicCheckDbContext db) 
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "ApiKey";

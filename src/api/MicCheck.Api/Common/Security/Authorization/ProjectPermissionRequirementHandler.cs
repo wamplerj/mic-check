@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MicCheck.Api.Common.Security.Authorization;
 
 public class ProjectPermissionRequirementHandler(
-    MicCheckDbContext db,
+    IMicCheckDbContext db,
     IHttpContextAccessor httpContextAccessor)
     : AuthorizationHandler<ProjectPermissionRequirement>
 {

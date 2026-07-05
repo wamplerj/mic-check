@@ -1,8 +1,10 @@
 using MicCheck.Api.Audit;
+using MicCheck.Api.Common;
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
-using MicCheck.Api.Common;
-using Microsoft.EntityFrameworkCore;
+using MicCheck.Api.Organizations;
+using MicCheck.Api.Projects;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using Moq;
 using NUnit.Framework;
 using AppEnvironment = MicCheck.Api.Environments.Environment;
@@ -12,7 +14,11 @@ namespace MicCheck.Api.Tests.Unit.Features;
 [TestFixture]
 public class FeatureServiceTests
 {
-    private MicCheckDbContext _db = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<Project> _projects = null!;
+    private List<Feature> _features = null!;
+    private List<FeatureState> _featureStates = null!;
+    private List<Tag> _tags = null!;
     private FeatureService _service = null!;
     private const int OrganizationId = 1;
     private const int ProjectId = 1;
@@ -21,51 +27,32 @@ public class FeatureServiceTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
+        _db = new Mock<IMicCheckDbContext>();
+
+        _db.SetupDbSet(c => c.Organizations, [
+            new Organization { Id = OrganizationId, Name = "Test Org", CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _projects = [new Project { Id = ProjectId, Name = "Test Project", OrganizationId = OrganizationId, CreatedAt = DateTimeOffset.UtcNow }];
+        _db.SetupDbSet(c => c.Projects, _projects);
+        _db.SetupDbSet(c => c.Environments, [
+            new AppEnvironment { Id = EnvironmentId, Name = "Production", ApiKey = "test-key", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _features = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Features, _features);
+        _featureStates = [];
+        _db.SetupDbSet(c => c.FeatureStates, _featureStates);
+        _tags = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Tags, _tags);
 
         var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
-        var auditService = new Mock<AuditService>(_db, null!, webhookQueue);
+        var auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
         auditService.Setup(a => a.RecordAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
             It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _service = new FeatureService(_db, auditService.Object, webhookQueue);
-
-        SeedBaseData();
-    }
-
-    [TearDown]
-    public void TearDown() => _db.Dispose();
-
-    private void SeedBaseData()
-    {
-        _db.Organizations.Add(new MicCheck.Api.Organizations.Organization
-        {
-            Id = OrganizationId,
-            Name = "Test Org",
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.Projects.Add(new MicCheck.Api.Projects.Project
-        {
-            Id = ProjectId,
-            Name = "Test Project",
-            OrganizationId = OrganizationId,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.Environments.Add(new AppEnvironment
-        {
-            Id = EnvironmentId,
-            Name = "Production",
-            ApiKey = "test-key",
-            ProjectId = ProjectId,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.SaveChanges();
+        _service = new FeatureService(_db.Object, auditService.Object, webhookQueue);
     }
 
     [Test]
@@ -73,7 +60,7 @@ public class FeatureServiceTests
     {
         var feature = await _service.CreateAsync(ProjectId, "dark_mode", FeatureType.Standard, null, null);
 
-        var states = await _db.FeatureStates.Where(fs => fs.FeatureId == feature.Id).ToListAsync();
+        var states = _featureStates.Where(fs => fs.FeatureId == feature.Id).ToList();
         Assert.That(states, Has.Count.EqualTo(1));
         Assert.That(states[0].EnvironmentId, Is.EqualTo(EnvironmentId));
     }
@@ -83,23 +70,23 @@ public class FeatureServiceTests
     {
         var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, "initial-val", null);
 
-        var state = await _db.FeatureStates.FirstAsync(fs => fs.FeatureId == feature.Id);
+        var state = _featureStates.First(fs => fs.FeatureId == feature.Id);
         Assert.That(state.Value, Is.EqualTo("initial-val"));
     }
 
     [Test]
-    public async Task WhenProjectHas400Features_ThenCreatingAnotherThrowsDomainException()
+    public void WhenProjectHas400Features_ThenCreatingAnotherThrowsDomainException()
     {
         for (var i = 0; i < 400; i++)
         {
-            _db.Features.Add(new Feature
+            _features.Add(new Feature
             {
+                Id = i + 1,
                 Name = $"feature_{i}",
                 ProjectId = ProjectId,
                 CreatedAt = DateTimeOffset.UtcNow
             });
         }
-        _db.SaveChanges();
 
         Assert.ThrowsAsync<DomainException>(() =>
             _service.CreateAsync(ProjectId, "overflow_feature", FeatureType.Standard, null, null));
@@ -123,7 +110,7 @@ public class FeatureServiceTests
 
         await _service.DeleteAsync(feature.Id);
 
-        var found = await _db.Features.FirstOrDefaultAsync(f => f.Id == feature.Id);
+        var found = _features.FirstOrDefault(f => f.Id == feature.Id);
         Assert.That(found, Is.Null);
     }
 
@@ -143,8 +130,7 @@ public class FeatureServiceTests
     {
         var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
         var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
-        _db.Tags.Add(tag);
-        await _db.SaveChangesAsync();
+        _db.Object.Tags.Add(tag);
 
         var updated = await _service.AssignTagAsync(feature.Id, tag.Id);
 
@@ -156,8 +142,7 @@ public class FeatureServiceTests
     {
         var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
         var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
-        _db.Tags.Add(tag);
-        await _db.SaveChangesAsync();
+        _db.Object.Tags.Add(tag);
 
         await _service.AssignTagAsync(feature.Id, tag.Id);
         var updated = await _service.AssignTagAsync(feature.Id, tag.Id);
@@ -168,7 +153,7 @@ public class FeatureServiceTests
     [Test]
     public async Task WhenAssigningATagFromAnotherProject_ThenDomainExceptionIsThrown()
     {
-        _db.Projects.Add(new MicCheck.Api.Projects.Project
+        _projects.Add(new Project
         {
             Id = 2,
             Name = "Other Project",
@@ -177,8 +162,7 @@ public class FeatureServiceTests
         });
         var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
         var foreignTag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = 2 };
-        _db.Tags.Add(foreignTag);
-        await _db.SaveChangesAsync();
+        _db.Object.Tags.Add(foreignTag);
 
         Assert.ThrowsAsync<DomainException>(() => _service.AssignTagAsync(feature.Id, foreignTag.Id));
     }
@@ -188,8 +172,7 @@ public class FeatureServiceTests
     {
         var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
         var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
-        _db.Tags.Add(tag);
-        await _db.SaveChangesAsync();
+        _db.Object.Tags.Add(tag);
         await _service.AssignTagAsync(feature.Id, tag.Id);
 
         var updated = await _service.RemoveTagAsync(feature.Id, tag.Id);

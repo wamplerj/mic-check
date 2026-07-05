@@ -141,8 +141,8 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
         if (environment is null) return NotFound();
 
-        var (_, logs) = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, new Audit.AuditLogFilter(), ct);
-        return Ok(logs.ToList());
+        var result = await auditLogQueryService.ListByEnvironmentAsync(environment.Id, new Audit.AuditLogFilter(), ct);
+        return Ok(result.Items.ToList());
     }
 
     [HttpGet("api/v1/environment/{apiKey}/identities")]
@@ -157,9 +157,9 @@ public class EnvironmentsController(EnvironmentService environmentService, Webho
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
         if (environment is null) return NotFound();
 
-        var (total, items) = await adminIdentityService.ListAsync(environment.Id, page, pageSize, ct);
-        var results = items.Select(Identities.AdminIdentityResponse.From).ToList();
-        return Ok(new PaginatedResponse<Identities.AdminIdentityResponse>(total, null, null, results));
+        var result = await adminIdentityService.ListAsync(environment.Id, page, pageSize, ct);
+        var results = result.Items.Select(Identities.AdminIdentityResponse.From).ToList();
+        return Ok(new PaginatedResponse<Identities.AdminIdentityResponse>(result.Total, null, null, results));
     }
 
     [HttpPost("api/v1/environment/{apiKey}/identities")]

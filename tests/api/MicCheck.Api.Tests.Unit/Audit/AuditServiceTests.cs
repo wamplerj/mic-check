@@ -1,9 +1,9 @@
 using System.Text.Json;
 using MicCheck.Api.Audit;
 using MicCheck.Api.Data;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using MicCheck.Api.Webhooks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 
@@ -12,34 +12,31 @@ namespace MicCheck.Api.Tests.Unit.Audit;
 [TestFixture]
 public class AuditServiceTests
 {
-    private MicCheckDbContext _db = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<AuditLog> _auditLogs = null!;
     private AuditService _service = null!;
     private WebhookQueue _queue = null!;
 
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
+        _db = new Mock<IMicCheckDbContext>();
+        _auditLogs = [];
+        _db.SetupDbSet(c => c.AuditLogs, _auditLogs);
         _queue = new WebhookQueue();
 
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
-        httpContextAccessor.Setup(x => x.HttpContext).Returns((Microsoft.AspNetCore.Http.HttpContext?)null);
+        httpContextAccessor.Setup(x => x.HttpContext).Returns((HttpContext?)null);
 
-        _service = new AuditService(_db, httpContextAccessor.Object, _queue);
+        _service = new AuditService(_db.Object, httpContextAccessor.Object, _queue);
     }
-
-    [TearDown]
-    public void TearDown() => _db.Dispose();
 
     [Test]
     public async Task WhenRecordingWithNoBefore_ThenChangesIsNull()
     {
         await _service.RecordAsync("Feature", "1", "created", organizationId: 1);
 
-        var log = await _db.AuditLogs.FirstAsync();
+        var log = _auditLogs.First();
         Assert.That(log.Changes, Is.Null);
     }
 
@@ -49,7 +46,7 @@ public class AuditServiceTests
         var after = new { Name = "dark_mode", Enabled = true };
         await _service.RecordAsync("Feature", "1", "created", organizationId: 1, after: after);
 
-        var log = await _db.AuditLogs.FirstAsync();
+        var log = _auditLogs.First();
         Assert.That(log.Changes, Is.Not.Null);
 
         var changes = JsonDocument.Parse(log.Changes!).RootElement;
@@ -67,7 +64,7 @@ public class AuditServiceTests
         await _service.RecordAsync("FeatureState", "42", "updated", organizationId: 1,
             before: before, after: after);
 
-        var log = await _db.AuditLogs.FirstAsync();
+        var log = _auditLogs.First();
         var changes = JsonDocument.Parse(log.Changes!).RootElement;
 
         Assert.That(changes.GetProperty("before").GetProperty("enabled").GetBoolean(), Is.False);
@@ -83,7 +80,7 @@ public class AuditServiceTests
             "Segment", "5", "deleted",
             organizationId: 10, projectId: 20, environmentId: 30);
 
-        var log = await _db.AuditLogs.FirstAsync();
+        var log = _auditLogs.First();
         Assert.That(log.ResourceType, Is.EqualTo("Segment"));
         Assert.That(log.ResourceId, Is.EqualTo("5"));
         Assert.That(log.Action, Is.EqualTo("deleted"));

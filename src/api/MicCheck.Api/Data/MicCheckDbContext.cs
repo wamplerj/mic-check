@@ -13,7 +13,7 @@ using AppEnvironment = MicCheck.Api.Environments.Environment;
 
 namespace MicCheck.Api.Data;
 
-public class MicCheckDbContext : DbContext
+public class MicCheckDbContext : DbContext, IMicCheckDbContext
 {
     public MicCheckDbContext(DbContextOptions<MicCheckDbContext> options) : base(options) { }
 
@@ -41,4 +41,32 @@ public class MicCheckDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(MicCheckDbContext).Assembly);
+}
+
+public interface IMicCheckDbContext
+{
+    DbSet<Organization> Organizations { get; }
+    DbSet<OrganizationUser> OrganizationUsers { get; }
+    DbSet<Project> Projects { get; }
+    DbSet<AppEnvironment> Environments { get; }
+    DbSet<Feature> Features { get; }
+    DbSet<FeatureState> FeatureStates { get; }
+    DbSet<FeatureSegment> FeatureSegments { get; }
+    DbSet<Tag> Tags { get; }
+    DbSet<Segment> Segments { get; }
+    DbSet<SegmentRule> SegmentRules { get; }
+    DbSet<SegmentCondition> SegmentConditions { get; }
+    DbSet<Identity> Identities { get; }
+    DbSet<IdentityTrait> IdentityTraits { get; }
+    DbSet<AuditLog> AuditLogs { get; }
+    DbSet<Webhook> Webhooks { get; }
+    DbSet<WebhookDeliveryLog> WebhookDeliveryLogs { get; }
+    DbSet<ApiKey> ApiKeys { get; }
+    DbSet<User> Users { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<UserProjectPermission> UserProjectPermissions { get; }
+    DbSet<FeatureUsageDaily> FeatureUsageDaily { get; }
+
+    int SaveChanges();
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

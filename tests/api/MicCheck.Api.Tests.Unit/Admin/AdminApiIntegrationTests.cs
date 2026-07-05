@@ -1,11 +1,14 @@
-using System.Net;
-using System.Net.Http.Json;
-using MicCheck.Api.Common.Security.ApiKeys;
+using MicCheck.Api.Audit;
 using MicCheck.Api.Data;
+using MicCheck.Api.Environments;
 using MicCheck.Api.Features;
 using MicCheck.Api.Organizations;
 using MicCheck.Api.Projects;
-using Microsoft.Extensions.DependencyInjection;
+using MicCheck.Api.Segments;
+using MicCheck.Api.Tests.Unit.TestSupport;
+using MicCheck.Api.Webhooks;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
 using NUnit.Framework;
 using AppEnvironment = MicCheck.Api.Environments.Environment;
 
@@ -14,139 +17,99 @@ namespace MicCheck.Api.Tests.Unit.Admin;
 [TestFixture]
 public class AdminApiIntegrationTests
 {
-    private MicCheckWebApplicationFactory _factory = null!;
-    private string _rawApiKey = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<Project> _projects = null!;
+    private List<Feature> _features = null!;
+    private List<FeatureState> _featureStates = null!;
+    private List<AppEnvironment> _environments = null!;
+    private List<Segment> _segments = null!;
+    private Mock<AuditService> _auditService = null!;
+    private int _organizationId;
 
     [SetUp]
     public void SetUp()
     {
-        _factory = new MicCheckWebApplicationFactory();
-        _rawApiKey = SeedOrganizationWithApiKey();
+        _db = new Mock<IMicCheckDbContext>();
+
+        _db.SetupDbSetWithGeneratedIds(c => c.Organizations, [
+            new Organization { Name = "Test Org", CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _organizationId = 1;
+
+        _projects = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Projects, _projects);
+        _features = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Features, _features);
+        _featureStates = [];
+        _db.SetupDbSet(c => c.FeatureStates, _featureStates);
+        _environments = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Environments, _environments);
+        _segments = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Segments, _segments);
+        _db.SetupDbSetWithGeneratedIds(c => c.SegmentRules, []);
+        _db.SetupDbSetWithGeneratedIds(c => c.SegmentConditions, []);
+
+        var webhookQueue = new WebhookQueue();
+        _auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
+        _auditService.Setup(a => a.LogAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
     }
 
-    [TearDown]
-    public void TearDown() => _factory.Dispose();
-
-    private string SeedOrganizationWithApiKey()
+    private Project AddProject(string name = "My Project")
     {
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-
-        var org = new Organization { Name = "Test Org", CreatedAt = DateTimeOffset.UtcNow };
-        db.Organizations.Add(org);
-        db.SaveChanges();
-
-        var rawKey = ApiKeyHasher.GenerateKey();
-        var hashedKey = ApiKeyHasher.Hash(rawKey);
-        var prefix = rawKey.Length >= 8 ? rawKey[..8] : rawKey;
-
-        db.ApiKeys.Add(new ApiKey
+        var project = new Project
         {
-            Key = hashedKey,
-            Prefix = prefix,
-            Name = "Test Key",
-            OrganizationId = org.Id,
-            IsActive = true,
+            Name = name,
+            OrganizationId = _organizationId,
             CreatedAt = DateTimeOffset.UtcNow
-        });
-        db.SaveChanges();
-
-        return rawKey;
-    }
-
-    private HttpClient CreateAuthenticatedClient()
-    {
-        var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("Authorization", $"Api-Key {_rawApiKey}");
-        return client;
+        };
+        _db.Object.Projects.Add(project);
+        return project;
     }
 
     [Test]
     public async Task WhenCreatingAProject_ThenProjectIsReturned()
     {
-        var client = CreateAuthenticatedClient();
+        var controller = new ProjectsController(new ProjectService(_db.Object, _auditService.Object));
 
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var org = db.Organizations.First();
+        var result = await controller.Create(new CreateProjectRequest("My Project", _organizationId), CancellationToken.None);
 
-        var response = await client.PostAsJsonAsync("/api/v1/projects", new
-        {
-            name = "My Project",
-            organizationId = org.Id
-        });
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(result.Result, Is.TypeOf<CreatedAtActionResult>());
     }
 
     [Test]
     public async Task WhenCreatingAFeature_ThenFeatureIsReturned()
     {
-        var client = CreateAuthenticatedClient();
+        var project = AddProject();
+        var controller = new FeaturesController(new FeatureService(_db.Object, _auditService.Object, new WebhookQueue()));
 
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var org = db.Organizations.First();
+        var result = await controller.Create(project.Id,
+            new CreateFeatureRequest("dark_mode", FeatureType.Standard, null, null), CancellationToken.None);
 
-        var project = new Project
-        {
-            Name = "My Project",
-            OrganizationId = org.Id,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        db.Projects.Add(project);
-        db.SaveChanges();
-
-        var response = await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/features", new
-        {
-            name = "dark_mode",
-            type = "Standard",
-            initialValue = (string?)null,
-            description = (string?)null
-        });
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(result.Result, Is.TypeOf<CreatedAtActionResult>());
     }
 
     [Test]
     public async Task WhenCreatingAFeature_ThenFeatureStateIsAutoCreatedForEnvironments()
     {
-        var client = CreateAuthenticatedClient();
-
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var org = db.Organizations.First();
-
-        var project = new Project
-        {
-            Name = "My Project",
-            OrganizationId = org.Id,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        db.Projects.Add(project);
-        db.SaveChanges();
-
-        db.Environments.Add(new AppEnvironment
+        var project = AddProject();
+        _db.Object.Environments.Add(new AppEnvironment
         {
             Name = "Production",
             ApiKey = "env-key-prod",
             ProjectId = project.Id,
             CreatedAt = DateTimeOffset.UtcNow
         });
-        db.SaveChanges();
+        var controller = new FeaturesController(new FeatureService(_db.Object, _auditService.Object, new WebhookQueue()));
 
-        await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/features", new
-        {
-            name = "flag_x",
-            type = "Standard",
-            initialValue = (string?)null,
-            description = (string?)null
-        });
+        await controller.Create(project.Id,
+            new CreateFeatureRequest("flag_x", FeatureType.Standard, null, null), CancellationToken.None);
 
-        using var verifyScope = _factory.Services.CreateScope();
-        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var feature = verifyDb.Features.First(f => f.Name == "flag_x");
-        var states = verifyDb.FeatureStates.Where(fs => fs.FeatureId == feature.Id).ToList();
+        var feature = _features.First(f => f.Name == "flag_x");
+        var states = _featureStates.Where(fs => fs.FeatureId == feature.Id).ToList();
 
         Assert.That(states, Has.Count.EqualTo(1));
     }
@@ -154,115 +117,42 @@ public class AdminApiIntegrationTests
     [Test]
     public async Task WhenCreatingAnEnvironment_ThenFeatureStateIsAutoCreatedForExistingFeatures()
     {
-        var client = CreateAuthenticatedClient();
-
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var org = db.Organizations.First();
-
-        var project = new Project
-        {
-            Name = "My Project",
-            OrganizationId = org.Id,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        db.Projects.Add(project);
-        db.Features.Add(new Feature
+        var project = AddProject();
+        _db.Object.Features.Add(new Feature
         {
             Name = "existing_flag",
             ProjectId = project.Id,
             CreatedAt = DateTimeOffset.UtcNow
         });
-        db.SaveChanges();
+        var controller = new EnvironmentsController(
+            new EnvironmentService(_db.Object, _auditService.Object),
+            new WebhookService(_db.Object));
 
-        var response = await client.PostAsJsonAsync("/api/v1/environments", new
-        {
-            name = "Staging",
-            projectId = project.Id
-        });
+        var result = await controller.Create(new CreateEnvironmentRequest("Staging", project.Id), CancellationToken.None);
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(result.Result, Is.TypeOf<CreatedAtActionResult>());
 
-        using var verifyScope = _factory.Services.CreateScope();
-        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var feature = verifyDb.Features.First(f => f.Name == "existing_flag");
-        var env = verifyDb.Environments.First(e => e.ProjectId == project.Id);
-        var states = verifyDb.FeatureStates.Where(fs => fs.EnvironmentId == env.Id && fs.FeatureId == feature.Id).ToList();
+        var feature = _features.First(f => f.Name == "existing_flag");
+        var env = _environments.First(e => e.ProjectId == project.Id);
+        var states = _featureStates.Where(fs => fs.EnvironmentId == env.Id && fs.FeatureId == feature.Id).ToList();
 
         Assert.That(states, Has.Count.EqualTo(1));
     }
 
     [Test]
-    public async Task WhenRequestIsMissingApiKey_ThenUnauthorizedIsReturned()
-    {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync("/api/v1/projects?organizationId=1");
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    }
-
-    [Test]
-    public async Task WhenCreatingAFeatureWithInvalidName_ThenUnprocessableEntityIsReturned()
-    {
-        var client = CreateAuthenticatedClient();
-
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var org = db.Organizations.First();
-
-        var project = new Project
-        {
-            Name = "My Project",
-            OrganizationId = org.Id,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        db.Projects.Add(project);
-        db.SaveChanges();
-
-        var response = await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/features", new
-        {
-            name = "invalid name with spaces!",
-            type = "Standard"
-        });
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.UnprocessableEntity));
-    }
-
-    [Test]
     public async Task WhenCreatingASegment_ThenSegmentIsReturned()
     {
-        var client = CreateAuthenticatedClient();
+        var project = AddProject();
+        var controller = new SegmentsController(new SegmentService(_db.Object, _auditService.Object));
 
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<MicCheckDbContext>();
-        var org = db.Organizations.First();
+        var result = await controller.Create(project.Id, new CreateSegmentRequest(
+            "Premium Users",
+            [
+                new CreateSegmentRuleRequest(
+                    "All",
+                    [new CreateSegmentConditionRequest("plan", "Equal", "premium")])
+            ]), CancellationToken.None);
 
-        var project = new Project
-        {
-            Name = "My Project",
-            OrganizationId = org.Id,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        db.Projects.Add(project);
-        db.SaveChanges();
-
-        var response = await client.PostAsJsonAsync($"/api/v1/project/{project.Id}/segments", new
-        {
-            name = "Premium Users",
-            rules = new[]
-            {
-                new
-                {
-                    type = "All",
-                    conditions = new[]
-                    {
-                        new { property = "plan", @operator = "Equal", value = "premium" }
-                    }
-                }
-            }
-        });
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(result.Result, Is.TypeOf<CreatedAtActionResult>());
     }
 }

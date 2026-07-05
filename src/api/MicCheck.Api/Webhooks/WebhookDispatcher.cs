@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Webhooks;
 
-public class WebhookDispatcher(MicCheckDbContext db, IHttpClientFactory httpClientFactory, ILogger<WebhookDispatcher> logger)
+public class WebhookDispatcher(IMicCheckDbContext db, IHttpClientFactory httpClientFactory, ILogger<WebhookDispatcher> logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -1,6 +1,7 @@
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
-using Microsoft.EntityFrameworkCore;
+using MicCheck.Api.Tests.Unit.TestSupport;
+using Moq;
 using NUnit.Framework;
 
 namespace MicCheck.Api.Tests.Unit.Features;
@@ -8,26 +9,23 @@ namespace MicCheck.Api.Tests.Unit.Features;
 [TestFixture]
 public class FeatureUsageQueryServiceTests
 {
-    private MicCheckDbContext _db = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<FeatureUsageDaily> _usage = null!;
     private FeatureUsageQueryService _service = null!;
     private const int EnvironmentId = 1;
 
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
-        _service = new FeatureUsageQueryService(_db);
+        _db = new Mock<IMicCheckDbContext>();
+        _usage = [];
+        _db.SetupDbSet(c => c.FeatureUsageDaily, _usage);
+        _service = new FeatureUsageQueryService(_db.Object);
     }
-
-    [TearDown]
-    public void TearDown() => _db.Dispose();
 
     private void SeedUsage(int environmentId, int featureId, string featureName, DateOnly date, long count)
     {
-        _db.FeatureUsageDaily.Add(new FeatureUsageDaily
+        _usage.Add(new FeatureUsageDaily
         {
             EnvironmentId = environmentId,
             FeatureId = featureId,
@@ -36,7 +34,6 @@ public class FeatureUsageQueryServiceTests
             Count = count,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
     }
 
     [Test]

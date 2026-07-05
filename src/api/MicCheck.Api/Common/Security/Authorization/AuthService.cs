@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MicCheck.Api.Common.Security.Authorization;
 
 public class AuthService(
-    MicCheckDbContext db,
+    IMicCheckDbContext db,
     ITokenService tokenService,
     IPasswordHasher<User> passwordHasher)
 {
@@ -81,7 +81,9 @@ public class AuthService(
         });
         await db.SaveChangesAsync(ct);
 
-        await db.Entry(user).Collection(u => u.Organizations).LoadAsync(ct);
+        var organizationUsers = await db.OrganizationUsers.Where(ou => ou.UserId == user.Id).ToListAsync(ct);
+        foreach (var organizationUser in organizationUsers)
+            user.Organizations.Add(organizationUser);
 
         var accessToken = tokenService.GenerateToken(user);
         var refreshTokenValue = GenerateSecureToken();

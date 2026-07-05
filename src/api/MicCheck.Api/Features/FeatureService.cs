@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class FeatureService(MicCheckDbContext db, AuditService auditService, WebhookQueue webhookQueue)
+public class FeatureService(IMicCheckDbContext db, AuditService auditService, WebhookQueue webhookQueue)
 {
     private const int MaxFeaturesPerProject = 400;
 

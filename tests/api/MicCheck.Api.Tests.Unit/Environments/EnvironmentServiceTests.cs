@@ -2,7 +2,10 @@ using MicCheck.Api.Audit;
 using MicCheck.Api.Data;
 using MicCheck.Api.Environments;
 using MicCheck.Api.Features;
-using Microsoft.EntityFrameworkCore;
+using MicCheck.Api.Identities;
+using MicCheck.Api.Organizations;
+using MicCheck.Api.Projects;
+using MicCheck.Api.Tests.Unit.TestSupport;
 using Moq;
 using NUnit.Framework;
 using AppEnvironment = MicCheck.Api.Environments.Environment;
@@ -12,7 +15,11 @@ namespace MicCheck.Api.Tests.Unit.Environments;
 [TestFixture]
 public class EnvironmentServiceTests
 {
-    private MicCheckDbContext _db = null!;
+    private Mock<IMicCheckDbContext> _db = null!;
+    private List<AppEnvironment> _environments = null!;
+    private List<Feature> _features = null!;
+    private List<FeatureState> _featureStates = null!;
+    private List<Identity> _identities = null!;
     private EnvironmentService _service = null!;
     private const int OrganizationId = 1;
     private const int ProjectId = 1;
@@ -20,60 +27,49 @@ public class EnvironmentServiceTests
     [SetUp]
     public void SetUp()
     {
-        var options = new DbContextOptionsBuilder<MicCheckDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _db = new MicCheckDbContext(options);
+        _db = new Mock<IMicCheckDbContext>();
+
+        _db.SetupDbSet(c => c.Organizations, [
+            new Organization { Id = OrganizationId, Name = "Test Org", CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _db.SetupDbSet(c => c.Projects, [
+            new Project { Id = ProjectId, Name = "Test Project", OrganizationId = OrganizationId, CreatedAt = DateTimeOffset.UtcNow }
+        ]);
+        _environments = [];
+        _db.SetupDbSetWithGeneratedIds(c => c.Environments, _environments);
+        _features = [];
+        _db.SetupDbSet(c => c.Features, _features);
+        _featureStates = [];
+        _db.SetupDbSet(c => c.FeatureStates, _featureStates);
+        _identities = [];
+        _db.SetupDbSet(c => c.Identities, _identities);
 
         var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
-        var auditService = new Mock<AuditService>(_db, null!, webhookQueue);
+        var auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
         auditService.Setup(a => a.LogAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
             It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _service = new EnvironmentService(_db, auditService.Object);
-
-        SeedBaseData();
-    }
-
-    [TearDown]
-    public void TearDown() => _db.Dispose();
-
-    private void SeedBaseData()
-    {
-        _db.Organizations.Add(new MicCheck.Api.Organizations.Organization
-        {
-            Id = OrganizationId,
-            Name = "Test Org",
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.Projects.Add(new MicCheck.Api.Projects.Project
-        {
-            Id = ProjectId,
-            Name = "Test Project",
-            OrganizationId = OrganizationId,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-        _db.SaveChanges();
+        _service = new EnvironmentService(_db.Object, auditService.Object);
     }
 
     [Test]
     public async Task WhenCreatingAnEnvironment_ThenFeatureStateIsCreatedForEachExistingFeature()
     {
-        _db.Features.Add(new Feature
+        _features.Add(new Feature
         {
+            Id = 1,
             Name = "feature_a",
             ProjectId = ProjectId,
             InitialValue = "hello",
             CreatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var environment = await _service.CreateAsync(ProjectId, "Staging");
 
-        var states = await _db.FeatureStates.Where(fs => fs.EnvironmentId == environment.Id).ToListAsync();
+        var states = _featureStates.Where(fs => fs.EnvironmentId == environment.Id).ToList();
         Assert.That(states, Has.Count.EqualTo(1));
         Assert.That(states[0].Value, Is.EqualTo("hello"));
     }
@@ -92,11 +88,10 @@ public class EnvironmentServiceTests
     {
         var source = await _service.CreateAsync(ProjectId, "Production");
 
-        var feature = new Feature { Name = "flag", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
-        _db.Features.Add(feature);
-        _db.SaveChanges();
+        var feature = new Feature { Id = 1, Name = "flag", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
+        _features.Add(feature);
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = source.Id,
@@ -105,13 +100,10 @@ public class EnvironmentServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var cloned = await _service.CloneAsync(source.ApiKey, "Staging");
 
-        var clonedStates = await _db.FeatureStates
-            .Where(fs => fs.EnvironmentId == cloned.Id)
-            .ToListAsync();
+        var clonedStates = _featureStates.Where(fs => fs.EnvironmentId == cloned.Id).ToList();
 
         Assert.That(clonedStates, Has.Count.EqualTo(1));
         Assert.That(clonedStates[0].Value, Is.EqualTo("prod-value"));
@@ -123,20 +115,19 @@ public class EnvironmentServiceTests
     {
         var source = await _service.CreateAsync(ProjectId, "Production");
 
-        var feature = new Feature { Name = "flag", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
-        _db.Features.Add(feature);
-        _db.SaveChanges();
+        var feature = new Feature { Id = 1, Name = "flag", ProjectId = ProjectId, CreatedAt = DateTimeOffset.UtcNow };
+        _features.Add(feature);
 
-        var identity = new MicCheck.Api.Identities.Identity
+        var identity = new Identity
         {
+            Id = 1,
             Identifier = "user-1",
             EnvironmentId = source.Id,
             CreatedAt = DateTimeOffset.UtcNow
         };
-        _db.Identities.Add(identity);
-        _db.SaveChanges();
+        _identities.Add(identity);
 
-        _db.FeatureStates.Add(new FeatureState
+        _featureStates.Add(new FeatureState
         {
             FeatureId = feature.Id,
             EnvironmentId = source.Id,
@@ -145,13 +136,10 @@ public class EnvironmentServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         });
-        _db.SaveChanges();
 
         var cloned = await _service.CloneAsync(source.ApiKey, "Staging");
 
-        var clonedStates = await _db.FeatureStates
-            .Where(fs => fs.EnvironmentId == cloned.Id)
-            .ToListAsync();
+        var clonedStates = _featureStates.Where(fs => fs.EnvironmentId == cloned.Id).ToList();
 
         Assert.That(clonedStates, Is.Empty);
     }

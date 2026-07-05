@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class FeatureSegmentService(MicCheckDbContext db)
+public class FeatureSegmentService(IMicCheckDbContext db)
 {
     public async Task<IReadOnlyList<FeatureSegmentResponse>> ListByFeatureAsync(
         int featureId, int environmentId, CancellationToken ct = default)

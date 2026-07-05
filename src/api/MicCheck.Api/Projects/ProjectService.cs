@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Projects;
 
-public class ProjectService(MicCheckDbContext db, AuditService auditService)
+public class ProjectService(IMicCheckDbContext db, AuditService auditService)
 {
     public async Task<IReadOnlyList<Project>> ListByOrganizationAsync(int organizationId, CancellationToken ct = default)
     {

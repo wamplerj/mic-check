@@ -152,6 +152,7 @@ try
 
     builder.Services.AddDbContext<MicCheckDbContext>(options =>
         options.UseNpgsql(connectionString));
+    builder.Services.AddScoped<IMicCheckDbContext>(sp => sp.GetRequiredService<MicCheckDbContext>());
 
     var app = builder.Build();
 

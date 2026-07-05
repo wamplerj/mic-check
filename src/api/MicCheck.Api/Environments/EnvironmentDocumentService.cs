@@ -5,7 +5,7 @@ using AppEnvironment = MicCheck.Api.Environments.Environment;
 
 namespace MicCheck.Api.Environments;
 
-public class EnvironmentDocumentService(MicCheckDbContext db)
+public class EnvironmentDocumentService(IMicCheckDbContext db)
 {
     public async Task<EnvironmentDocumentResponse?> GetAsync(int environmentId, CancellationToken ct = default)
     {

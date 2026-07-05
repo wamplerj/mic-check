@@ -1,12 +1,13 @@
+using MicCheck.Api.Common;
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Identities;
 
-public class AdminIdentityService(MicCheckDbContext db)
+public class AdminIdentityService(IMicCheckDbContext db)
 {
-    public async Task<(int Total, IReadOnlyList<Identity> Items)> ListAsync(
+    public async Task<PagedResult<Identity>> ListAsync(
         int environmentId, int page, int pageSize, CancellationToken ct = default)
     {
         var query = db.Identities
@@ -20,7 +21,7 @@ public class AdminIdentityService(MicCheckDbContext db)
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return (total, items);
+        return new PagedResult<Identity>(total, items);
     }
 
     public async Task<Identity?> CreateAsync(int environmentId, string identifier, CancellationToken ct = default)

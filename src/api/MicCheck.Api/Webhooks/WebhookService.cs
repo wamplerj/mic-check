@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Webhooks;
 
-public class WebhookService(MicCheckDbContext db)
+public class WebhookService(IMicCheckDbContext db)
 {
     public async Task<IReadOnlyList<Webhook>> ListByEnvironmentAsync(int environmentId, CancellationToken ct = default)
     {
