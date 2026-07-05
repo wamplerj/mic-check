@@ -6,7 +6,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, build-runner-fix]
 
 jobs:
   build-and-push:
@@ -42,7 +42,32 @@ jobs:
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       QA_ADMIN_PORT: ${{ vars.QA_ADMIN_PORT }}
     steps:
-      - uses: actions/checkout@v4
+      # actions/checkout@v4 is a Node-based action; this runner has no node
+      # in PATH, so checkout plain git instead of via marketplace action.
+      - name: Checkout
+        run: |
+          git init -q .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git -c http.extraheader="AUTHORIZATION: bearer ${{ github.token }}" fetch --depth=1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD
 
       - name: Deploy to QA
         run: ./scripts/ci/deploy-qa.sh
+
+  smoke-qa:
+    needs: deploy-qa
+    runs-on: [self-hosted, qa]
+    env:
+      QA_ADMIN_PORT: ${{ vars.QA_ADMIN_PORT }}
+    steps:
+      # actions/checkout@v4 is a Node-based action; this runner has no node
+      # in PATH, so checkout plain git instead of via marketplace action.
+      - name: Checkout
+        run: |
+          git init -q .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git -c http.extraheader="AUTHORIZATION: bearer ${{ github.token }}" fetch --depth=1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD
+
+      - name: Smoke test QA deployment
+        run: ./scripts/ci/smoke-qa.sh

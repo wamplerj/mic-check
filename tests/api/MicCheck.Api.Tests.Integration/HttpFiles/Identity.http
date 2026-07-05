@@ -1,0 +1,4 @@
+### GetIdentity
+GET {{baseUrl}}/api/v1/identity?identifier={{identifier}}
+X-Environment-Key: {{environmentKey}}
+Accept: application/json

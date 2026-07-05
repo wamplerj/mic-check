@@ -6,6 +6,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")" && source ./lib.sh
 cd "$CI_ROOT"
 
+ensure_dotnet
+
 log "Restoring and publishing MicCheck.Api (Release)"
 dotnet publish src/api/MicCheck.Api/MicCheck.Api.csproj -c Release
 

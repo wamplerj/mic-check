@@ -1,0 +1,4 @@
+### GetEnvironmentDocument
+GET {{baseUrl}}/api/v1/environment-document
+X-Environment-Key: {{environmentKey}}
+Accept: application/json

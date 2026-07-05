@@ -7,7 +7,9 @@
     "build:dev": "vite build --mode development",
     "serve": "vite",
     "preview": "vite preview",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -28,6 +30,7 @@
     "@babel/core": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "@babel/preset-typescript": "^7.24.0",
+    "@playwright/test": "^1.61.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.0",
     "@vitejs/plugin-vue": "^6.0.6",

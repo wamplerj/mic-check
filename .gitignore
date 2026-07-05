@@ -438,6 +438,11 @@ dist-ssr/
 # TypeScript incremental build cache
 *.tsbuildinfo
 
+# Playwright
+src/admin/test-results/
+src/admin/playwright-report/
+src/admin/e2e/.auth/
+
 # Jest test coverage reports
 coverage/
 .nyc_output/
@@ -468,3 +473,6 @@ lerna-debug.log*
 # Windows thumbnail cache
 Thumbs.db
 ehthumbs.db
+
+# Self-installed .NET SDK (scripts/ci/lib.sh ensure_dotnet, used when a CI runner lacks the SDK)
+/.dotnet/

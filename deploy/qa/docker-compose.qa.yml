@@ -1,8 +1,11 @@
 name: miccheck-qa
 
 # Dedicated, network-isolated QA stack. Not connected to the dev compose
-# stack's network - runs entirely on its own bridge network below, and the
-# database has no published host port.
+# stack's network - runs entirely on its own bridge network below. The API has
+# no published host port; Postgres is bound to DB_BIND_HOST (docker's bridge
+# gateway IP, computed by deploy-qa.sh) so the smoke-qa CI job - itself a
+# sibling container on that same default bridge - can seed/inspect data
+# directly, while it stays unreachable off-box (unlike binding to 0.0.0.0).
 services:
 
   db:
@@ -11,6 +14,8 @@ services:
       POSTGRES_DB: miccheck
       POSTGRES_USER: miccheck
       POSTGRES_PASSWORD: password
+    ports:
+      - "${DB_BIND_HOST:-127.0.0.1}:55432:5432"
     volumes:
       - miccheck-qa-pgdata:/var/lib/postgresql/data
     networks:
@@ -36,7 +41,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/v1/health 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

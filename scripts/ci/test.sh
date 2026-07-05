@@ -6,6 +6,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")" && source ./lib.sh
 cd "$CI_ROOT"
 
+ensure_dotnet
+
 log "Running MicCheck.Api.Tests.Unit"
 dotnet test tests/api/MicCheck.Api.Tests.Unit/MicCheck.Api.Tests.Unit.csproj -c Release --logger trx
 

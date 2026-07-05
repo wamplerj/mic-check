@@ -5,6 +5,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")" && source ./lib.sh
 cd "$CI_ROOT"
 
+ensure_dotnet
+
 log "Building full solution (Debug)"
 dotnet build MicCheck.slnx -c Debug
 
