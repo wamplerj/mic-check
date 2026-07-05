@@ -9,9 +9,10 @@ cd "$CI_ROOT"
 ensure_dotnet
 
 log "Running MicCheck.Api.Tests.Unit"
-dotnet test tests/api/MicCheck.Api.Tests.Unit/MicCheck.Api.Tests.Unit.csproj -c Release --logger trx
+dotnet test tests/api/MicCheck.Api.Tests.Unit/MicCheck.Api.Tests.Unit.csproj -c Release --logger trx \
+  --collect:"XPlat Code Coverage" --results-directory "$CI_ROOT/coverage/dotnet"
 
 log "Running admin Jest tests"
-npm --prefix src/admin test
+npm --prefix src/admin test -- --coverage --coverageReporters=lcov --coverageReporters=text-summary
 
 log "test.sh complete"

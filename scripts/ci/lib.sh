@@ -125,6 +125,22 @@ ensure_node() {
   export PATH="$install_dir/bin:$PATH"
 }
 
+# Installs the dotnet-reportgenerator-globaltool CLI (merges coverlet/Jest
+# coverage output into badges + build-summary markdown) into $CI_ROOT/.dotnet-tools
+# if it isn't already on PATH. Mirrors ensure_dotnet()/ensure_node() above.
+ensure_reportgenerator() {
+  if command -v reportgenerator > /dev/null 2>&1; then
+    return 0
+  fi
+
+  local tool_dir="$CI_ROOT/.dotnet-tools"
+  if [[ ! -x "$tool_dir/reportgenerator" ]]; then
+    log "reportgenerator not found on PATH; installing dotnet-reportgenerator-globaltool"
+    dotnet tool install dotnet-reportgenerator-globaltool --tool-path "$tool_dir"
+  fi
+  export PATH="$tool_dir:$PATH"
+}
+
 # The IP address on which a container published on 0.0.0.0/<gateway-ip> is
 # reachable from a sibling container on docker's default bridge network (i.e.
 # the docker host's bridge-side address, not its public interface). Used to

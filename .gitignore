@@ -476,3 +476,6 @@ ehthumbs.db
 
 # Self-installed .NET SDK (scripts/ci/lib.sh ensure_dotnet, used when a CI runner lacks the SDK)
 /.dotnet/
+
+# Self-installed reportgenerator CLI (scripts/ci/lib.sh ensure_reportgenerator)
+/.dotnet-tools/

@@ -1,5 +1,9 @@
 # MicCheck
 
+[![GitHub CI](https://github.com/wamplerj/mic-check/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wamplerj/mic-check/actions/workflows/ci.yml)
+[![Gitea CI](https://git.wampler.us/wamplerj/mic-check/actions/workflows/ci.yml/badge.svg?branch=main)](https://git.wampler.us/wamplerj/mic-check/actions?workflow=ci.yml)
+![Coverage](badges/coverage.svg)
+
 Open source feature flag management platform. Manage projects, environments, feature flags, segments, and identities across your apps.
 
 Built with .NET (API) and Vue.js + Vuetify (admin UI).

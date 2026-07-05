@@ -2,15 +2,25 @@
 # (both look under .github/workflows/). Every non-checkout step just invokes a
 # bash script under scripts/ci/, so the entire pipeline is reproducible by
 # running the same scripts locally - no marketplace build/test/push actions.
+#
+# Gitea (origin) is the internal/testing remote and runs the full pipeline:
+# build, test, docker push, deploy-to-qa, smoke test. GitHub is the public
+# mirror and only needs to prove the code builds and tests pass - it has no
+# registry secrets and no [self-hosted, qa] runner, so the docker push and
+# deploy/smoke jobs are skipped there via the `github.server_url` check
+# below (identical on both engines: https://github.com on GitHub, the Gitea
+# instance URL on Gitea).
 name: CI
 
 on:
   push:
-    branches: [main, build-runner-fix]
+    paths-ignore: [badges/**]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       REGISTRY: ${{ secrets.REGISTRY }}
       REGISTRY_OWNER: ${{ secrets.REGISTRY_OWNER }}
@@ -25,14 +35,25 @@ jobs:
       - name: Test
         run: ./scripts/ci/test.sh
 
+      - name: Coverage report
+        run: ./scripts/ci/coverage.sh
+
+      - name: Publish coverage badge
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/ci/publish-coverage-badge.sh
+
       - name: Build Docker images
+        if: github.server_url != 'https://github.com' && github.ref_name == 'main'
         run: ./scripts/ci/docker-build.sh
 
       - name: Push Docker images
+        if: github.server_url != 'https://github.com' && github.ref_name == 'main'
         run: ./scripts/ci/docker-push.sh
 
   deploy-qa:
     needs: build-and-push
+    if: github.server_url != 'https://github.com' && github.ref_name == 'main'
     runs-on: [self-hosted, qa]
     env:
       REGISTRY: ${{ secrets.REGISTRY }}
@@ -56,6 +77,7 @@ jobs:
 
   smoke-qa:
     needs: deploy-qa
+    if: github.server_url != 'https://github.com'
     runs-on: [self-hosted, qa]
     env:
       QA_ADMIN_PORT: ${{ vars.QA_ADMIN_PORT }}
