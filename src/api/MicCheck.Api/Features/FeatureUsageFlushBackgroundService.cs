@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using MicCheck.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
+[ExcludeFromCodeCoverage(Justification = "Timer-driven BackgroundService that issues raw SQL through a DI-scoped concrete MicCheckDbContext; exercising it cleanly requires a live DB, which CLAUDE.md disallows (no WebApplicationFactory/InMemory). DrainAccumulated's bucketing logic is covered by FeatureUsageMetricsTests.")]
 public class FeatureUsageFlushBackgroundService(
     FeatureUsageMetrics metrics,
     IServiceScopeFactory scopeFactory,

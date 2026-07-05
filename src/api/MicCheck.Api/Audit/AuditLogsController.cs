@@ -12,17 +12,15 @@ namespace MicCheck.Api.Audit;
 [ApiController]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
+[Route("api/v1")]
 public class AuditLogsController(
     AuditLogQueryService auditLogQueryService,
     OrganizationService organizationService,
     ProjectService projectService,
     EnvironmentService environmentService) : ControllerBase
 {
-    [HttpGet("api/v1/organisation/{id}/audit-logs")]
-    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByOrganization(
-        int id,
-        [FromQuery] AuditLogFilter filter,
-        CancellationToken ct)
+    [HttpGet("organisation/{id}/audit-logs")]
+    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByOrganization(int id, [FromQuery] AuditLogFilter filter, CancellationToken ct)
     {
         var org = await organizationService.FindByIdAsync(id, ct);
         if (org is null) return NotFound();
@@ -31,11 +29,8 @@ public class AuditLogsController(
         return Ok(new PaginatedResponse<AuditLogResponse>(result.Total, null, null, result.Items.ToList()));
     }
 
-    [HttpGet("api/v1/project/{projectId}/audit-logs")]
-    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByProject(
-        int projectId,
-        [FromQuery] AuditLogFilter filter,
-        CancellationToken ct)
+    [HttpGet("project/{projectId}/audit-logs")]
+    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByProject(int projectId, [FromQuery] AuditLogFilter filter, CancellationToken ct)
     {
         var project = await projectService.FindByIdAsync(projectId, ct);
         if (project is null) return NotFound();
@@ -44,11 +39,8 @@ public class AuditLogsController(
         return Ok(new PaginatedResponse<AuditLogResponse>(result.Total, null, null, result.Items.ToList()));
     }
 
-    [HttpGet("api/v1/environment/{apiKey}/audit-logs")]
-    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByEnvironment(
-        string apiKey,
-        [FromQuery] AuditLogFilter filter,
-        CancellationToken ct)
+    [HttpGet("environment/{apiKey}/audit-logs")]
+    public async Task<ActionResult<PaginatedResponse<AuditLogResponse>>> ListByEnvironment(string apiKey, [FromQuery] AuditLogFilter filter, CancellationToken ct)
     {
         var environment = await environmentService.FindByApiKeyAsync(apiKey, ct);
         if (environment is null) return NotFound();

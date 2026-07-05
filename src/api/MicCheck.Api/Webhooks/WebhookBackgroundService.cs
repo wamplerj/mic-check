@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using MicCheck.Api.Data;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MicCheck.Api.Webhooks;
 
+[ExcludeFromCodeCoverage(Justification = "Long-running BackgroundService reading from a Channel and issuing DI-scoped dispatches; exercising it cleanly requires a live DI container and DB, which CLAUDE.md disallows (no WebApplicationFactory/InMemory). Dispatch logic is covered by WebhookDispatcherTests.")]
 public class WebhookBackgroundService(
     WebhookQueue queue,
     IServiceScopeFactory scopeFactory,

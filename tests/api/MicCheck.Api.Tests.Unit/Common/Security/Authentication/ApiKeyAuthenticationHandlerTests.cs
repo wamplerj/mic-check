@@ -76,6 +76,14 @@ public class ApiKeyAuthenticationHandlerTests
     }
 
     [Test]
+    public async Task WhenApiKeyValueIsEmpty_ThenAuthenticationFails()
+    {
+        var result = await AuthenticateAsync("Api-Key ");
+
+        Assert.That(result.Succeeded, Is.False);
+    }
+
+    [Test]
     public async Task WhenApiKeyIsInvalid_ThenAuthenticationFails()
     {
         var result = await AuthenticateAsync("Api-Key not-a-real-key");

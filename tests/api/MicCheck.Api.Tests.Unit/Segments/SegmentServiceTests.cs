@@ -136,4 +136,51 @@ public class SegmentServiceTests
 
         Assert.That(segments, Has.Count.EqualTo(2));
     }
+
+    [Test]
+    public async Task WhenFindingASegmentByIdThatExists_ThenTheSegmentIsReturned()
+    {
+        var segment = await _service.CreateAsync(ProjectId, "Segment", [SingleConditionRule()]);
+
+        var found = await _service.FindByIdAsync(segment.Id);
+
+        Assert.That(found, Is.Not.Null);
+        Assert.That(found!.Id, Is.EqualTo(segment.Id));
+    }
+
+    [Test]
+    public async Task WhenFindingASegmentByIdThatDoesNotExist_ThenNullIsReturned()
+    {
+        var found = await _service.FindByIdAsync(999);
+
+        Assert.That(found, Is.Null);
+    }
+
+    [Test]
+    public void WhenUpdatingASegmentThatDoesNotExist_ThenKeyNotFoundExceptionIsThrown()
+    {
+        Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _service.UpdateAsync(999, "Renamed", [SingleConditionRule()]));
+    }
+
+    [Test]
+    public void WhenDeletingASegmentThatDoesNotExist_ThenNoExceptionIsThrown()
+    {
+        Assert.DoesNotThrowAsync(() => _service.DeleteAsync(999));
+    }
+
+    [Test]
+    public async Task WhenCreatingASegmentWithNestedChildRules_ThenChildRulesArePersistedWithTheParentAsTheirParent()
+    {
+        var childRule = new SegmentRuleDefinition(SegmentRuleType.Any, [new SegmentConditionDefinition("country", SegmentConditionOperator.Equal, "US")]);
+        var parentRule = new SegmentRuleDefinition(SegmentRuleType.All, [new SegmentConditionDefinition("plan", SegmentConditionOperator.Equal, "premium")], [childRule]);
+
+        var segment = await _service.CreateAsync(ProjectId, "Nested", [parentRule]);
+
+        var persistedRules = _segmentRules.Where(r => r.SegmentId == segment.Id).ToList();
+        var parent = persistedRules.Single(r => r.ParentRuleId == null);
+        var child = persistedRules.Single(r => r.ParentRuleId == parent.Id);
+
+        Assert.That(child.Conditions.Single().Property, Is.EqualTo("country"));
+    }
 }

@@ -179,4 +179,68 @@ public class FeatureServiceTests
 
         Assert.That(updated.Tags.Select(t => t.Id), Does.Not.Contain(tag.Id));
     }
+
+    [Test]
+    public async Task WhenFindingAFeatureByIdThatExists_ThenTheFeatureIsReturned()
+    {
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+
+        var found = await _service.FindByIdAsync(feature.Id);
+
+        Assert.That(found, Is.Not.Null);
+        Assert.That(found!.Id, Is.EqualTo(feature.Id));
+    }
+
+    [Test]
+    public async Task WhenFindingAFeatureByIdThatDoesNotExist_ThenNullIsReturned()
+    {
+        var found = await _service.FindByIdAsync(999);
+
+        Assert.That(found, Is.Null);
+    }
+
+    [Test]
+    public void WhenUpdatingAFeatureThatDoesNotExist_ThenKeyNotFoundExceptionIsThrown()
+    {
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.UpdateAsync(999, "renamed", null));
+    }
+
+    [Test]
+    public void WhenAssigningATagToAFeatureThatDoesNotExist_ThenKeyNotFoundExceptionIsThrown()
+    {
+        var tag = new Tag { Label = "beta", Color = "#FF0000", ProjectId = ProjectId };
+        _db.Object.Tags.Add(tag);
+
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AssignTagAsync(999, tag.Id));
+    }
+
+    [Test]
+    public async Task WhenAssigningATagThatDoesNotExist_ThenKeyNotFoundExceptionIsThrown()
+    {
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AssignTagAsync(feature.Id, 999));
+    }
+
+    [Test]
+    public void WhenRemovingATagFromAFeatureThatDoesNotExist_ThenKeyNotFoundExceptionIsThrown()
+    {
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.RemoveTagAsync(999, 1));
+    }
+
+    [Test]
+    public async Task WhenRemovingATagThatIsNotAssigned_ThenTheFeatureIsUnchanged()
+    {
+        var feature = await _service.CreateAsync(ProjectId, "flag", FeatureType.Standard, null, null);
+
+        var updated = await _service.RemoveTagAsync(feature.Id, 999);
+
+        Assert.That(updated.Tags, Is.Empty);
+    }
+
+    [Test]
+    public void WhenDeletingAFeatureThatDoesNotExist_ThenNoExceptionIsThrown()
+    {
+        Assert.DoesNotThrowAsync(() => _service.DeleteAsync(999));
+    }
 }

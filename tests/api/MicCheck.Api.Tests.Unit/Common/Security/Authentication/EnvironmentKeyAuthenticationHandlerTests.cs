@@ -52,6 +52,14 @@ public class EnvironmentKeyAuthenticationHandlerTests
     }
 
     [Test]
+    public async Task WhenEnvironmentKeyHeaderIsEmpty_ThenAuthenticationFails()
+    {
+        var result = await AuthenticateAsync("");
+
+        Assert.That(result.Succeeded, Is.False);
+    }
+
+    [Test]
     public async Task WhenEnvironmentKeyIsInvalid_ThenAuthenticationFails()
     {
         var result = await AuthenticateAsync("not-a-real-key");

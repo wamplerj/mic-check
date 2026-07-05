@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using MicCheck.Api.Common.Security.Authorization;
 
 namespace MicCheck.Api.Common.Security.ApiKeys;
 
+[ExcludeFromCodeCoverage(Justification = "Minimal-API route registration; requires a live HTTP pipeline to exercise, which CLAUDE.md disallows (no WebApplicationFactory/InMemory). Branch logic is covered via ApiKeyService unit tests.")]
 public static class ApiKeyEndpoints
 {
     public static void MapApiKeyEndpoints(this WebApplication app)

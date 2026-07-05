@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MicCheck.Api.Audit;
 using MicCheck.Api.Data;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ public class OrganizationService(IMicCheckDbContext db, AuditService auditServic
         return org;
     }
 
+    [ExcludeFromCodeCoverage(Justification = "ExecuteUpdateAsync requires a real EF Core relational query provider; our Mock<DbSet<T>> LINQ-to-Objects provider can't execute it, and CLAUDE.md disallows the EF InMemory provider as a substitute. The not-a-member early-return branch is covered by OrganizationServiceTests.")]
     public async Task SetPrimaryAsync(int organizationId, int userId, CancellationToken ct = default)
     {
         var member = await db.OrganizationUsers

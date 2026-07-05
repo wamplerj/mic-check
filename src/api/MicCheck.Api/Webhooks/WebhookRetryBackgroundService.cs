@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using MicCheck.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Webhooks;
 
+[ExcludeFromCodeCoverage(Justification = "Timer-driven BackgroundService that resolves a DI-scoped concrete MicCheckDbContext and WebhookDispatcher; exercising it cleanly requires a live DI container and DB, which CLAUDE.md disallows (no WebApplicationFactory/InMemory). The retry-eligibility query logic is covered by WebhookRetryTests.")]
 public class WebhookRetryBackgroundService(
     IServiceScopeFactory scopeFactory,
     ILogger<WebhookRetryBackgroundService> logger) : BackgroundService

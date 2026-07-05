@@ -275,6 +275,51 @@ public class SegmentEvaluatorTests
     }
 
     [Test]
+    public void WhenModuloConditionValueIsMalformed_ThenSegmentDoesNotMatch()
+    {
+        var segment = BuildSegment(SegmentRuleType.All,
+            Condition("userId", SegmentConditionOperator.ModuloValueDivisorRemainder, "not-a-modulo-spec"));
+        var traits = new[] { Trait("userId", "9") };
+
+        Assert.That(_evaluator.Evaluate(segment, traits), Is.False);
+    }
+
+    [Test]
+    public void WhenModuloDivisorIsZero_ThenSegmentDoesNotMatch()
+    {
+        var segment = BuildSegment(SegmentRuleType.All,
+            Condition("userId", SegmentConditionOperator.ModuloValueDivisorRemainder, "0|0"));
+        var traits = new[] { Trait("userId", "9") };
+
+        Assert.That(_evaluator.Evaluate(segment, traits), Is.False);
+    }
+
+    [Test]
+    public void WhenPercentageSplitValueIsNotANumber_ThenSegmentDoesNotMatch()
+    {
+        var segment = BuildSegment(SegmentRuleType.All,
+            Condition("", SegmentConditionOperator.PercentageSplit, "not-a-number"));
+
+        Assert.That(_evaluator.Evaluate(segment, [], "any-user"), Is.False);
+    }
+
+    [Test]
+    public void WhenARuleHasAChildRuleThatFails_ThenTheParentRuleDoesNotMatchEvenIfItsOwnConditionsPass()
+    {
+        var segment = new Segment { Name = "Test", ProjectId = 1, CreatedAt = DateTimeOffset.UtcNow };
+        var parent = new SegmentRule { Type = SegmentRuleType.All };
+        parent.Conditions.Add(Condition("plan", SegmentConditionOperator.Equal, "premium"));
+        var child = new SegmentRule { Type = SegmentRuleType.All };
+        child.Conditions.Add(Condition("country", SegmentConditionOperator.Equal, "US"));
+        parent.ChildRules.Add(child);
+        segment.Rules.Add(parent);
+
+        var traits = new[] { Trait("plan", "premium"), Trait("country", "UK") };
+
+        Assert.That(_evaluator.Evaluate(segment, traits), Is.False);
+    }
+
+    [Test]
     public void WhenRuleTypeIsAny_ThenAtLeastOneConditionMustMatch()
     {
         var segment = BuildSegment(SegmentRuleType.Any,

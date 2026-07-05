@@ -13,10 +13,7 @@ namespace MicCheck.Api.Features;
 public class FeatureUsageController(FeatureUsageQueryService queryService, IMemoryCache cache) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<DashboardUsageResponse>> GetDashboardUsage(
-        int environmentId,
-        [FromQuery] int days = 14,
-        CancellationToken ct = default)
+    public async Task<ActionResult<DashboardUsageResponse>> GetDashboardUsage(int environmentId, [FromQuery] int days = 14, CancellationToken ct = default)
     {
         days = Math.Clamp(days, 1, 90);
         var cacheKey = $"usage-dashboard:{environmentId}:{days}";

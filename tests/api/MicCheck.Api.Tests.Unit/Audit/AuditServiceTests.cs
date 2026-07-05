@@ -91,6 +91,85 @@ public class AuditServiceTests
     }
 
     [Test]
+    public async Task WhenLoggingWithNoChanges_ThenChangesRemainsNull()
+    {
+        await _service.LogAsync("Feature", "1", "created", organizationId: 1);
+
+        var log = _auditLogs.First();
+        Assert.That(log.Changes, Is.Null);
+    }
+
+    [Test]
+    public async Task WhenLoggingWithChanges_ThenChangesAndMetadataArePersisted()
+    {
+        await _service.LogAsync("Feature", "2", "updated", organizationId: 5, projectId: 6, environmentId: 7, changes: "raw-json");
+
+        var log = _auditLogs.First();
+        Assert.That(log.ResourceType, Is.EqualTo("Feature"));
+        Assert.That(log.ResourceId, Is.EqualTo("2"));
+        Assert.That(log.Action, Is.EqualTo("updated"));
+        Assert.That(log.Changes, Is.EqualTo("raw-json"));
+        Assert.That(log.OrganizationId, Is.EqualTo(5));
+        Assert.That(log.ProjectId, Is.EqualTo(6));
+        Assert.That(log.EnvironmentId, Is.EqualTo(7));
+    }
+
+    [Test]
+    public async Task WhenLogging_ThenAuditLogCreatedEventIsEnqueued()
+    {
+        await _service.LogAsync("Feature", "1", "created", organizationId: 1);
+
+        var events = new List<WebhookEvent>();
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        try
+        {
+            await foreach (var e in _queue.ReadAllAsync(cts.Token))
+            {
+                events.Add(e);
+                break;
+            }
+        }
+        catch (OperationCanceledException) { }
+
+        Assert.That(events, Has.Count.EqualTo(1));
+        Assert.That(events[0].EventType, Is.EqualTo(WebhookEventTypes.AuditLogCreated));
+    }
+
+    [Test]
+    public async Task WhenTheHttpContextHasAnAuthenticatedUser_ThenTheActorUserIdIsResolvedFromTheClaim()
+    {
+        var identity = new System.Security.Claims.ClaimsIdentity(
+            [new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "42")], "TestAuth");
+        var httpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+        {
+            User = new System.Security.Claims.ClaimsPrincipal(identity)
+        };
+        var httpContextAccessor = new Mock<IHttpContextAccessor>();
+        httpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
+        var service = new AuditService(_db.Object, httpContextAccessor.Object, _queue);
+
+        await service.RecordAsync("Feature", "1", "created", organizationId: 1);
+
+        Assert.That(_auditLogs.First().ActorUserId, Is.EqualTo(42));
+    }
+
+    [Test]
+    public async Task WhenTheHttpContextHasNoNameIdentifierClaim_ThenTheActorUserIdIsNull()
+    {
+        var httpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+        {
+            User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())
+        };
+        var httpContextAccessor = new Mock<IHttpContextAccessor>();
+        httpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
+        var service = new AuditService(_db.Object, httpContextAccessor.Object, _queue);
+
+        await service.RecordAsync("Feature", "1", "created", organizationId: 1);
+
+        Assert.That(_auditLogs.First().ActorUserId, Is.Null);
+    }
+
+    [Test]
     public async Task WhenRecording_ThenAuditLogCreatedEventIsEnqueued()
     {
         await _service.RecordAsync("Feature", "1", "created", organizationId: 1);

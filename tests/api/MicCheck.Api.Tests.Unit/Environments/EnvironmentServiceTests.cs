@@ -153,4 +153,73 @@ public class EnvironmentServiceTests
 
         Assert.That(cloned.ApiKey, Is.Not.EqualTo(source.ApiKey));
     }
+
+    [Test]
+    public void WhenCloningFromANonExistentApiKey_ThenKeyNotFoundExceptionIsThrown()
+    {
+        Assert.That(async () => await _service.CloneAsync("missing-key", "Staging"), Throws.TypeOf<KeyNotFoundException>());
+    }
+
+    [Test]
+    public async Task WhenListingByProject_ThenOnlyEnvironmentsForThatProjectAreReturned()
+    {
+        await _service.CreateAsync(ProjectId, "Env1");
+        await _service.CreateAsync(999, "OtherProjectEnv");
+
+        var result = await _service.ListByProjectAsync(ProjectId);
+
+        Assert.That(result, Has.Count.EqualTo(1));
+        Assert.That(result[0].Name, Is.EqualTo("Env1"));
+    }
+
+    [Test]
+    public async Task WhenFindingByApiKeyThatDoesNotExist_ThenNullIsReturned()
+    {
+        var result = await _service.FindByApiKeyAsync("missing-key");
+
+        Assert.That(result, Is.Null);
+    }
+
+    [Test]
+    public async Task WhenFindingByApiKeyThatExists_ThenTheEnvironmentIsReturned()
+    {
+        var created = await _service.CreateAsync(ProjectId, "Production");
+
+        var result = await _service.FindByApiKeyAsync(created.ApiKey);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Id, Is.EqualTo(created.Id));
+    }
+
+    [Test]
+    public async Task WhenUpdatingAnEnvironment_ThenNameIsChanged()
+    {
+        var created = await _service.CreateAsync(ProjectId, "Original");
+
+        var updated = await _service.UpdateAsync(created.ApiKey, "Renamed");
+
+        Assert.That(updated.Name, Is.EqualTo("Renamed"));
+    }
+
+    [Test]
+    public void WhenUpdatingANonExistentEnvironment_ThenKeyNotFoundExceptionIsThrown()
+    {
+        Assert.That(async () => await _service.UpdateAsync("missing-key", "Renamed"), Throws.TypeOf<KeyNotFoundException>());
+    }
+
+    [Test]
+    public async Task WhenDeletingAnExistingEnvironment_ThenItIsRemoved()
+    {
+        var created = await _service.CreateAsync(ProjectId, "ToDelete");
+
+        await _service.DeleteAsync(created.ApiKey);
+
+        Assert.That(_environments, Is.Empty);
+    }
+
+    [Test]
+    public void WhenDeletingANonExistentEnvironment_ThenNoExceptionIsThrown()
+    {
+        Assert.That(async () => await _service.DeleteAsync("missing-key"), Throws.Nothing);
+    }
 }

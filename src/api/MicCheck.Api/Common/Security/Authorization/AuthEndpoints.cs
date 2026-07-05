@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MicCheck.Api.Common.Security.Authorization;
 
+[ExcludeFromCodeCoverage(Justification = "Minimal-API route registration; requires a live HTTP pipeline to exercise, which CLAUDE.md disallows (no WebApplicationFactory/InMemory). Branch logic is covered via AuthService unit tests.")]
 public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this WebApplication app)

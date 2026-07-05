@@ -216,4 +216,10 @@ public class AuthServiceTests
 
         Assert.That(response, Is.Null);
     }
+
+    [Test]
+    public void WhenLoggingOutWithATokenThatDoesNotExist_ThenNoExceptionIsThrown()
+    {
+        Assert.DoesNotThrowAsync(() => _service.LogoutAsync("unknown-token"));
+    }
 }
