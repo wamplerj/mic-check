@@ -4,7 +4,7 @@ using MicCheck.Api.Webhooks;
 
 namespace MicCheck.Api.Audit;
 
-public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContextAccessor, WebhookQueue webhookQueue)
+public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContextAccessor, WebhookQueue webhookQueue) : IAuditService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -12,7 +12,7 @@ public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContex
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public virtual async Task RecordAsync(
+    public async Task RecordAsync(
         string resourceType,
         string resourceId,
         string action,
@@ -33,7 +33,7 @@ public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContex
             }, JsonOptions);
         }
 
-        var actorUserId = ResolveActorUserId();
+        var actorUserId = GetCurrentUserId();
 
         var log = new AuditLog
         {
@@ -68,7 +68,7 @@ public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContex
     }
 
     // Backward-compatible overload used by existing callers
-    public virtual async Task LogAsync(
+    public async Task LogAsync(
         string resourceType,
         string resourceId,
         string action,
@@ -78,7 +78,7 @@ public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContex
         string? changes = null,
         CancellationToken ct = default)
     {
-        var actorUserId = ResolveActorUserId();
+        var actorUserId = GetCurrentUserId();
 
         var log = new AuditLog
         {
@@ -112,9 +112,33 @@ public class AuditService(IMicCheckDbContext db, IHttpContextAccessor httpContex
         });
     }
 
-    private int? ResolveActorUserId()
+    private int? GetCurrentUserId()
     {
         var claim = httpContextAccessor.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(claim, out var id) ? id : null;
     }
+}
+
+public interface IAuditService
+{
+    Task RecordAsync(
+        string resourceType,
+        string resourceId,
+        string action,
+        int organizationId,
+        int? projectId = null,
+        int? environmentId = null,
+        object? before = null,
+        object? after = null,
+        CancellationToken ct = default);
+
+    Task LogAsync(
+        string resourceType,
+        string resourceId,
+        string action,
+        int organizationId,
+        int? projectId = null,
+        int? environmentId = null,
+        string? changes = null,
+        CancellationToken ct = default);
 }

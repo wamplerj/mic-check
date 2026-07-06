@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using MicCheck.Api.Data;
 using MicCheck.Api.Features;
+using MicCheck.Api.Features.Usage;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Segments;
 using MicCheck.Api.Tests.Unit.TestSupport;

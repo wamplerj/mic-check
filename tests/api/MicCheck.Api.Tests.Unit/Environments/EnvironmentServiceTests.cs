@@ -45,7 +45,7 @@ public class EnvironmentServiceTests
         _db.SetupDbSet(c => c.Identities, _identities);
 
         var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
-        var auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
+        var auditService = new Mock<IAuditService>();
         auditService.Setup(a => a.LogAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),

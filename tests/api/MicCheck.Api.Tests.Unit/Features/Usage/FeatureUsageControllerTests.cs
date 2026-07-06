@@ -1,12 +1,12 @@
 using MicCheck.Api.Data;
-using MicCheck.Api.Features;
+using MicCheck.Api.Features.Usage;
 using MicCheck.Api.Tests.Unit.TestSupport;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using NUnit.Framework;
 
-namespace MicCheck.Api.Tests.Unit.Features;
+namespace MicCheck.Api.Tests.Unit.Features.Usage;
 
 [TestFixture]
 public class FeatureUsageControllerTests

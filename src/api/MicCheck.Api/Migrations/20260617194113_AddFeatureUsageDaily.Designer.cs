@@ -305,7 +305,7 @@ namespace MicCheck.Api.Migrations
                     b.ToTable("FeatureStates");
                 });
 
-            modelBuilder.Entity("MicCheck.Api.Features.FeatureUsageDaily", b =>
+            modelBuilder.Entity("MicCheck.Api.Features.Usage.FeatureUsageDaily", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

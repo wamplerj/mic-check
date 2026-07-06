@@ -7,7 +7,7 @@ using AppEnvironment = MicCheck.Api.Environments.Environment;
 
 namespace MicCheck.Api.Environments;
 
-public class EnvironmentService(IMicCheckDbContext db, AuditService auditService)
+public class EnvironmentService(IMicCheckDbContext db, IAuditService auditService)
 {
     public async Task<IReadOnlyList<AppEnvironment>> ListByProjectAsync(int projectId, CancellationToken ct = default)
     {

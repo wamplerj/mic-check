@@ -1,17 +1,25 @@
-using FluentValidation;
 using MicCheck.Api.Common.Security.Authorization;
+using MicCheck.Api.Common.Validation;
 
 namespace MicCheck.Api.Projects;
 
 public record SetUserPermissionsRequest(int UserId, bool IsAdmin, List<string> Permissions);
 
-public class SetUserPermissionsRequestValidator : AbstractValidator<SetUserPermissionsRequest>
+public class SetUserPermissionsRequestValidator : IModelValidator<SetUserPermissionsRequest>
 {
-    public SetUserPermissionsRequestValidator()
+    public ValidationResult Validate(SetUserPermissionsRequest model)
     {
-        RuleFor(x => x.UserId).GreaterThan(0);
-        RuleForEach(x => x.Permissions)
-            .Must(p => Enum.TryParse<ProjectPermission>(p, true, out _))
-            .WithMessage("Invalid permission value.");
+        var result = new ValidationResult();
+
+        if (model.UserId <= 0)
+            result.AddError(nameof(model.UserId), "'User Id' must be greater than 0.");
+
+        foreach (var permission in model.Permissions)
+        {
+            if (!Enum.TryParse<ProjectPermission>(permission, true, out _))
+                result.AddError(nameof(model.Permissions), "Invalid permission value.");
+        }
+
+        return result;
     }
 }

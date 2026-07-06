@@ -1,4 +1,5 @@
 using MicCheck.Api.Data;
+using MicCheck.Api.Features.Usage;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Segments;
 using Microsoft.EntityFrameworkCore;

@@ -1,4 +1,4 @@
-using MicCheck.Api.Features;
+using MicCheck.Api.Features.Usage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

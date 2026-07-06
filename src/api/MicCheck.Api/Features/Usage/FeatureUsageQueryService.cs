@@ -1,7 +1,7 @@
 using MicCheck.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace MicCheck.Api.Features;
+namespace MicCheck.Api.Features.Usage;
 
 public class FeatureUsageQueryService(IMicCheckDbContext db)
 {

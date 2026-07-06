@@ -1,15 +1,23 @@
-using FluentValidation;
+using MicCheck.Api.Common.Validation;
 
 namespace MicCheck.Api.Organizations;
 
 public record InviteUserRequest(int UserId, string Role);
 
-public class InviteUserRequestValidator : AbstractValidator<InviteUserRequest>
+public class InviteUserRequestValidator : IModelValidator<InviteUserRequest>
 {
-    public InviteUserRequestValidator()
+    public ValidationResult Validate(InviteUserRequest model)
     {
-        RuleFor(x => x.UserId).GreaterThan(0);
-        RuleFor(x => x.Role).NotEmpty().Must(r => Enum.TryParse<OrganizationRole>(r, true, out _))
-            .WithMessage("Role must be 'User' or 'Admin'.");
+        var result = new ValidationResult();
+
+        if (model.UserId <= 0)
+            result.AddError(nameof(model.UserId), "'User Id' must be greater than 0.");
+
+        if (string.IsNullOrEmpty(model.Role))
+            result.AddError(nameof(model.Role), "'Role' must not be empty.");
+        else if (!Enum.TryParse<OrganizationRole>(model.Role, true, out _))
+            result.AddError(nameof(model.Role), "Role must be 'User' or 'Admin'.");
+
+        return result;
     }
 }

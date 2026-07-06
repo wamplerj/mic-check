@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace MicCheck.Api.Features;
+namespace MicCheck.Api.Features.Usage;
 
 [ApiController]
 [Route("api/v1/environment/{environmentId}/usage")]

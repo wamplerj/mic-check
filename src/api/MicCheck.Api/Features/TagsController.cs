@@ -8,23 +8,24 @@ namespace MicCheck.Api.Features;
 [ApiController]
 [Authorize(Policy = AuthorizationPolicies.AdminApiAccess)]
 [EnableRateLimiting("AdminApi")]
+[Route("api/v1/project/{projectId}")]
 public class TagsController(TagService tagService) : ControllerBase
 {
-    [HttpGet("api/v1/project/{projectId}/tags")]
+    [HttpGet("tags")]
     public async Task<ActionResult<IReadOnlyList<TagResponse>>> List(int projectId, CancellationToken ct)
     {
         var tags = await tagService.ListByProjectAsync(projectId, ct);
         return Ok(tags.Select(TagResponse.From).ToList());
     }
 
-    [HttpPost("api/v1/project/{projectId}/tags")]
+    [HttpPost("tags")]
     public async Task<ActionResult<TagResponse>> Create(int projectId, CreateTagRequest request, CancellationToken ct)
     {
         var tag = await tagService.CreateAsync(projectId, request.Label, request.Color, ct);
         return CreatedAtAction(nameof(List), new { projectId }, TagResponse.From(tag));
     }
 
-    [HttpDelete("api/v1/project/{projectId}/tag/{id}")]
+    [HttpDelete("tag/{id}")]
     public async Task<IActionResult> Delete(int projectId, int id, CancellationToken ct)
     {
         var tag = await tagService.FindByIdAsync(id, ct);

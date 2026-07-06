@@ -113,7 +113,7 @@ public class EnvironmentsControllerTests
         _db.SetupDbSet(c => c.Users, []);
 
         var webhookQueue = new WebhookQueue();
-        var auditServiceMock = new Mock<AuditService>(_db.Object, null!, webhookQueue);
+        var auditServiceMock = new Mock<IAuditService>();
         auditServiceMock.Setup(a => a.LogAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),

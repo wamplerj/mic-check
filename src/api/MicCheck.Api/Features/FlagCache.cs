@@ -12,11 +12,9 @@ public class FlagCache(IMemoryCache cache)
         return flags;
     }
 
-    public void Set(int environmentId, IReadOnlyList<FeatureStateResult> flags)
-        => cache.Set(CacheKey(environmentId), flags, CacheDuration);
+    public void Set(int environmentId, IReadOnlyList<FeatureStateResult> flags) => cache.Set(CacheKey(environmentId), flags, CacheDuration);
 
-    public void Invalidate(int environmentId)
-        => cache.Remove(CacheKey(environmentId));
+    public void Invalidate(int environmentId) => cache.Remove(CacheKey(environmentId));
 
     private static string CacheKey(int environmentId) => $"flags:{environmentId}";
 }

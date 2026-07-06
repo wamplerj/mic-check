@@ -6,29 +6,25 @@ namespace MicCheck.Api.Audit;
 
 public class AuditLogQueryService(IMicCheckDbContext db)
 {
-    public async Task<PagedResult<AuditLogResponse>> ListByOrganizationAsync(
-        int organizationId, AuditLogFilter filter, CancellationToken ct = default)
+    public async Task<PagedResult<AuditLogResponse>> ListByOrganizationAsync(int organizationId, AuditLogFilter filter, CancellationToken ct = default)
     {
         var query = db.AuditLogs.Where(l => l.OrganizationId == organizationId);
         return await ApplyFilterAndPageAsync(query, filter, ct);
     }
 
-    public async Task<PagedResult<AuditLogResponse>> ListByProjectAsync(
-        int projectId, AuditLogFilter filter, CancellationToken ct = default)
+    public async Task<PagedResult<AuditLogResponse>> ListByProjectAsync(int projectId, AuditLogFilter filter, CancellationToken ct = default)
     {
         var query = db.AuditLogs.Where(l => l.ProjectId == projectId);
         return await ApplyFilterAndPageAsync(query, filter, ct);
     }
 
-    public async Task<PagedResult<AuditLogResponse>> ListByEnvironmentAsync(
-        int environmentId, AuditLogFilter filter, CancellationToken ct = default)
+    public async Task<PagedResult<AuditLogResponse>> ListByEnvironmentAsync(int environmentId, AuditLogFilter filter, CancellationToken ct = default)
     {
         var query = db.AuditLogs.Where(l => l.EnvironmentId == environmentId);
         return await ApplyFilterAndPageAsync(query, filter, ct);
     }
 
-    private async Task<PagedResult<AuditLogResponse>> ApplyFilterAndPageAsync(
-        IQueryable<AuditLog> query, AuditLogFilter filter, CancellationToken ct)
+    private async Task<PagedResult<AuditLogResponse>> ApplyFilterAndPageAsync(IQueryable<AuditLog> query, AuditLogFilter filter, CancellationToken ct)
     {
         if (filter.From.HasValue)
             query = query.Where(l => l.CreatedAt >= filter.From.Value);

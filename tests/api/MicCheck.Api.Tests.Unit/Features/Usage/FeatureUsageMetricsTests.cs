@@ -1,9 +1,9 @@
 using System.Diagnostics.Metrics;
-using MicCheck.Api.Features;
+using MicCheck.Api.Features.Usage;
 using Moq;
 using NUnit.Framework;
 
-namespace MicCheck.Api.Tests.Unit.Features;
+namespace MicCheck.Api.Tests.Unit.Features.Usage;
 
 [TestFixture]
 public class FeatureUsageMetricsTests

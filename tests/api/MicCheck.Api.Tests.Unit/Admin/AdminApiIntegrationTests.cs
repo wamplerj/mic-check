@@ -23,7 +23,7 @@ public class AdminApiIntegrationTests
     private List<FeatureState> _featureStates = null!;
     private List<AppEnvironment> _environments = null!;
     private List<Segment> _segments = null!;
-    private Mock<AuditService> _auditService = null!;
+    private Mock<IAuditService> _auditService = null!;
     private int _organizationId;
 
     [SetUp]
@@ -50,7 +50,7 @@ public class AdminApiIntegrationTests
         _db.SetupDbSetWithGeneratedIds(c => c.SegmentConditions, []);
 
         var webhookQueue = new WebhookQueue();
-        _auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
+        _auditService = new Mock<IAuditService>();
         _auditService.Setup(a => a.LogAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),

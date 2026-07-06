@@ -1,6 +1,6 @@
 namespace MicCheck.Api.Audit;
 
-public class AuditLog
+public record AuditLog
 {
     public int Id { get; init; }
     public required string ResourceType { get; init; }

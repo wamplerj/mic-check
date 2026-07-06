@@ -9,7 +9,7 @@ public record SegmentConditionDefinition(string Property, SegmentConditionOperat
 
 public record SegmentRuleDefinition(SegmentRuleType Type, IReadOnlyList<SegmentConditionDefinition> Conditions, IReadOnlyList<SegmentRuleDefinition>? ChildRules = null);
 
-public class SegmentService(IMicCheckDbContext db, AuditService auditService)
+public class SegmentService(IMicCheckDbContext db, IAuditService auditService)
 {
     private const int MaxSegmentsPerProject = 100;
     private const int MaxConditionsPerSegment = 100;

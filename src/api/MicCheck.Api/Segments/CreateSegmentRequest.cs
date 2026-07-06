@@ -1,4 +1,4 @@
-using FluentValidation;
+using MicCheck.Api.Common.Validation;
 
 namespace MicCheck.Api.Segments;
 
@@ -16,24 +16,38 @@ public record CreateSegmentRequest(
     string Name,
     IReadOnlyList<CreateSegmentRuleRequest> Rules);
 
-public class CreateSegmentRequestValidator : AbstractValidator<CreateSegmentRequest>
+public class CreateSegmentRequestValidator : IModelValidator<CreateSegmentRequest>
 {
-    public CreateSegmentRequestValidator()
+    public ValidationResult Validate(CreateSegmentRequest model)
     {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Rules).NotNull();
-        RuleForEach(x => x.Rules).ChildRules(rule =>
+        var result = new ValidationResult();
+
+        if (string.IsNullOrEmpty(model.Name))
+            result.AddError(nameof(model.Name), "'Name' must not be empty.");
+        else if (model.Name.Length > 200)
+            result.AddError(nameof(model.Name), "'Name' must be 200 characters or fewer.");
+
+        if (model.Rules is null)
         {
-            rule.RuleFor(r => r.Type)
-                .Must(t => Enum.TryParse<SegmentRuleType>(t, true, out _))
-                .WithMessage("Rule type must be 'All', 'Any', or 'None'.");
-            rule.RuleForEach(r => r.Conditions).ChildRules(cond =>
+            result.AddError(nameof(model.Rules), "'Rules' must not be empty.");
+            return result;
+        }
+
+        foreach (var rule in model.Rules)
+        {
+            if (!Enum.TryParse<SegmentRuleType>(rule.Type, true, out _))
+                result.AddError(nameof(model.Rules), "Rule type must be 'All', 'Any', or 'None'.");
+
+            foreach (var condition in rule.Conditions)
             {
-                cond.RuleFor(c => c.Property).NotEmpty();
-                cond.RuleFor(c => c.Operator)
-                    .Must(o => Enum.TryParse<SegmentConditionOperator>(o, true, out _))
-                    .WithMessage("Invalid operator.");
-            });
-        });
+                if (string.IsNullOrEmpty(condition.Property))
+                    result.AddError(nameof(model.Rules), "'Property' must not be empty.");
+
+                if (!Enum.TryParse<SegmentConditionOperator>(condition.Operator, true, out _))
+                    result.AddError(nameof(model.Rules), "Invalid operator.");
+            }
+        }
+
+        return result;
     }
 }

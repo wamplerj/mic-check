@@ -1,11 +1,9 @@
-using System.Text;
 using System.Threading.RateLimiting;
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Audit;
-using MicCheck.Api.Common.Security.Authentication;
+using MicCheck.Api.Common;
+using MicCheck.Api.Common.Security.ApiKeys;
 using MicCheck.Api.Common.Security.Authorization;
+using MicCheck.Api.Common.Validation;
 using MicCheck.Api.Data;
 using MicCheck.Api.Environments;
 using MicCheck.Api.Features;
@@ -15,14 +13,7 @@ using MicCheck.Api.Projects;
 using MicCheck.Api.Segments;
 using MicCheck.Api.Users;
 using MicCheck.Api.Webhooks;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -42,44 +33,12 @@ try
               .WriteTo.Console());
 
     builder.Services.AddOpenApi();
-    builder.Services.AddControllers()
+    builder.Services.AddControllers(options => options.Filters.Add<ModelValidationActionFilter>())
         .AddJsonOptions(options =>
             options.JsonSerializerOptions.Converters.Add(
                 new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
-    builder.Services.AddAuthentication()
-        .AddScheme<AuthenticationSchemeOptions, EnvironmentKeyAuthenticationHandler>(
-            EnvironmentKeyAuthenticationHandler.SchemeName, _ => { })
-        .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
-            ApiKeyAuthenticationHandler.SchemeName, _ => { })
-        .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                ValidAudience = builder.Configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
-            };
-        });
-
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy(AuthorizationPolicies.FlagsApiAccess, policy =>
-            policy.AddAuthenticationSchemes(EnvironmentKeyAuthenticationHandler.SchemeName)
-                  .RequireClaim("EnvironmentId"));
-
-        options.AddPolicy(AuthorizationPolicies.AdminApiAccess, policy =>
-            policy.AddAuthenticationSchemes(ApiKeyAuthenticationHandler.SchemeName, JwtBearerDefaults.AuthenticationScheme)
-                  .RequireAuthenticatedUser());
-
-        options.AddPolicy(AuthorizationPolicies.OrganizationAdmin, policy =>
-            policy.AddAuthenticationSchemes(ApiKeyAuthenticationHandler.SchemeName, JwtBearerDefaults.AuthenticationScheme)
-                  .RequireClaim("OrganizationRole", "Admin"));
-    });
+    builder.Services.AddCommonServices(builder.Configuration);
 
     builder.Services.AddHttpContextAccessor();
 
@@ -92,67 +51,20 @@ try
             limiter.QueueLimit = 0;
         }));
 
-    builder.Services.AddFluentValidationAutoValidation();
-    builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
-    builder.Services.Configure<ApiBehaviorOptions>(options =>
-    {
-        options.InvalidModelStateResponseFactory = context =>
-        {
-            var errors = context.ModelState
-                .Where(e => e.Value?.Errors.Count > 0)
-                .ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
-            return new UnprocessableEntityObjectResult(new { errors });
-        };
-    });
-
     builder.Services.AddMemoryCache();
     builder.Services.AddMetrics();
 
-    builder.Services.AddScoped<ITokenService, TokenService>();
-    builder.Services.AddScoped<AuthService>();
-    builder.Services.AddScoped<ApiKeyService>();
-    builder.Services.AddScoped<DatabaseSeeder>();
-    builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
-    builder.Services.AddScoped<IAuthorizationHandler, ProjectPermissionRequirementHandler>();
-    builder.Services.AddScoped<FeatureEvaluationService>();
-    builder.Services.AddScoped<IdentityResolutionService>();
-    builder.Services.AddScoped<EnvironmentDocumentService>();
-    builder.Services.AddSingleton<SegmentEvaluator>();
-    builder.Services.AddSingleton<FlagCache>();
-    builder.Services.AddScoped<AuditService>();
-    builder.Services.AddScoped<AuditLogQueryService>();
-    builder.Services.AddScoped<OrganizationService>();
-    builder.Services.AddScoped<ProjectService>();
-    builder.Services.AddScoped<EnvironmentService>();
-    builder.Services.AddScoped<FeatureService>();
-    builder.Services.AddScoped<FeatureStateService>();
-    builder.Services.AddScoped<FeatureSegmentService>();
-    builder.Services.AddScoped<SegmentService>();
-    builder.Services.AddScoped<TagService>();
-    builder.Services.AddScoped<WebhookService>();
-    builder.Services.AddScoped<WebhookDispatcher>();
-    builder.Services.AddScoped<AdminIdentityService>();
-    builder.Services.AddScoped<UserService>();
-    builder.Services.AddSingleton<WebhookQueue>();
-    builder.Services.AddHostedService<WebhookBackgroundService>();
-    builder.Services.AddHostedService<WebhookRetryBackgroundService>();
-    builder.Services.AddSingleton<FeatureUsageMetrics>();
-    builder.Services.AddScoped<FeatureUsageQueryService>();
-    builder.Services.AddHostedService<FeatureUsageFlushBackgroundService>();
-    builder.Services.AddHttpClient("Webhooks", client =>
-        client.DefaultRequestHeaders.Add("User-Agent", "MicCheck-Webhook/1.0"));
+    builder.Services.AddAuditServices();
+    builder.Services.AddIdentitiesServices();
+    builder.Services.AddEnvironmentsServices();
+    builder.Services.AddSegmentsServices();
+    builder.Services.AddOrganizationsServices();
+    builder.Services.AddProjectsServices();
+    builder.Services.AddFeaturesServices();
+    builder.Services.AddUsersServices();
+    builder.Services.AddWebhooksServices();
 
-    var connectionString = builder.Configuration.GetConnectionString("miccheck")
-        ?? (System.Environment.GetEnvironmentVariable("DATABASE_URL") is { } databaseUrl
-            ? DatabaseUrlParser.ToNpgsqlConnectionString(databaseUrl)
-            : builder.Configuration.GetConnectionString("DefaultConnection")!);
-
-    builder.Services.AddDbContext<MicCheckDbContext>(options =>
-        options.UseNpgsql(connectionString));
-    builder.Services.AddScoped<IMicCheckDbContext>(sp => sp.GetRequiredService<MicCheckDbContext>());
+    builder.Services.AddDataServices(builder.Configuration);
 
     var app = builder.Build();
 

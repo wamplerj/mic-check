@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 
-namespace MicCheck.Api.Features;
+namespace MicCheck.Api.Features.Usage;
 
 public class FeatureUsageMetrics : IDisposable
 {

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using MicCheck.Api.Data;
 using MicCheck.Api.Environments;
 using MicCheck.Api.Features;
+using MicCheck.Api.Features.Usage;
 using MicCheck.Api.Identities;
 using MicCheck.Api.Projects;
 using MicCheck.Api.Segments;

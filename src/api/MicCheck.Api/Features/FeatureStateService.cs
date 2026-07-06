@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class FeatureStateService(IMicCheckDbContext db, WebhookQueue webhookQueue, AuditService auditService)
+public class FeatureStateService(IMicCheckDbContext db, WebhookQueue webhookQueue, IAuditService auditService)
 {
     public async Task<IReadOnlyList<FeatureState>> ListByEnvironmentAsync(int environmentId, CancellationToken ct = default)
     {

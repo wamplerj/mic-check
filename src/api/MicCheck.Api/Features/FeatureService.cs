@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MicCheck.Api.Features;
 
-public class FeatureService(IMicCheckDbContext db, AuditService auditService, WebhookQueue webhookQueue)
+public class FeatureService(IMicCheckDbContext db, IAuditService auditService, WebhookQueue webhookQueue)
 {
     private const int MaxFeaturesPerProject = 400;
 
@@ -23,13 +23,7 @@ public class FeatureService(IMicCheckDbContext db, AuditService auditService, We
         return await db.Features.Include(f => f.Tags).FirstOrDefaultAsync(f => f.Id == id, ct);
     }
 
-    public async Task<Feature> CreateAsync(
-        int projectId,
-        string name,
-        FeatureType type,
-        string? initialValue,
-        string? description,
-        CancellationToken ct = default)
+    public async Task<Feature> CreateAsync(int projectId, string name, FeatureType type, string? initialValue, string? description, CancellationToken ct = default)
     {
         var count = await db.Features.CountAsync(f => f.ProjectId == projectId, ct);
         if (count >= MaxFeaturesPerProject)
@@ -78,8 +72,7 @@ public class FeatureService(IMicCheckDbContext db, AuditService auditService, We
         return feature;
     }
 
-    public async Task<Feature> UpdateAsync(
-        int id, string name, string? description, CancellationToken ct = default)
+    public async Task<Feature> UpdateAsync(int id, string name, string? description, CancellationToken ct = default)
     {
         var feature = await db.Features.Include(f => f.Tags).FirstOrDefaultAsync(f => f.Id == id, ct)
             ?? throw new KeyNotFoundException($"Feature {id} not found.");
@@ -162,11 +155,7 @@ public class FeatureService(IMicCheckDbContext db, AuditService auditService, We
                     EventType = WebhookEventTypes.FlagDeleted,
                     EnvironmentId = env.Id,
                     OrganizationId = project.OrganizationId,
-                    Data = new FlagDeletedData(
-                        null,
-                        DateTimeOffset.UtcNow,
-                        new FeatureSummary(feature.Id, feature.Name))
-                });
+                    Data = new FlagDeletedData(null, DateTimeOffset.UtcNow, new FeatureSummary(feature.Id, feature.Name)) });
             }
         }
     }

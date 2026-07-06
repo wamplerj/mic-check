@@ -46,7 +46,7 @@ public class AuditLogsControllerTests
         _db.SetupDbSet(c => c.AuditLogs, _auditLogs);
         _db.SetupDbSet(c => c.Users, []);
 
-        var auditServiceMock = new Mock<AuditService>(_db.Object, null!, new MicCheck.Api.Webhooks.WebhookQueue());
+        var auditServiceMock = new Mock<IAuditService>();
         var auditService = auditServiceMock.Object;
 
         _controller = new AuditLogsController(

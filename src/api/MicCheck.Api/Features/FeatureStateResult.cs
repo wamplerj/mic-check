@@ -1,6 +1,6 @@
 namespace MicCheck.Api.Features;
 
-public class FeatureStateResult
+public record FeatureStateResult
 {
     public required Feature Feature { get; init; }
     public bool Enabled { get; init; }

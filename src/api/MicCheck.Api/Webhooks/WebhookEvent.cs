@@ -1,6 +1,6 @@
 namespace MicCheck.Api.Webhooks;
 
-public class WebhookEvent
+public record WebhookEvent
 {
     public required string EventType { get; init; }
     public int? EnvironmentId { get; init; }

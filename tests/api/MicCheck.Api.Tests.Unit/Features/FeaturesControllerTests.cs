@@ -41,7 +41,7 @@ public class FeaturesControllerTests
         _db.SetupDbSetWithGeneratedIds(c => c.Tags, _tags);
 
         var webhookQueue = new MicCheck.Api.Webhooks.WebhookQueue();
-        var auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
+        var auditService = new Mock<IAuditService>();
         auditService.Setup(a => a.RecordAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),

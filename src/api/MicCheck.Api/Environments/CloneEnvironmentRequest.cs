@@ -1,13 +1,20 @@
-using FluentValidation;
+using MicCheck.Api.Common.Validation;
 
 namespace MicCheck.Api.Environments;
 
 public record CloneEnvironmentRequest(string Name);
 
-public class CloneEnvironmentRequestValidator : AbstractValidator<CloneEnvironmentRequest>
+public class CloneEnvironmentRequestValidator : IModelValidator<CloneEnvironmentRequest>
 {
-    public CloneEnvironmentRequestValidator()
+    public ValidationResult Validate(CloneEnvironmentRequest model)
     {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        var result = new ValidationResult();
+
+        if (string.IsNullOrEmpty(model.Name))
+            result.AddError(nameof(model.Name), "'Name' must not be empty.");
+        else if (model.Name.Length > 200)
+            result.AddError(nameof(model.Name), "'Name' must be 200 characters or fewer.");
+
+        return result;
     }
 }

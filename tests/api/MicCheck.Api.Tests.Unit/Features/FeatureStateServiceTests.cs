@@ -43,7 +43,7 @@ public class FeatureStateServiceTests
         _db.SetupDbSetWithGeneratedIds(c => c.FeatureStates, _featureStates);
 
         var webhookQueue = new WebhookQueue();
-        var auditService = new Mock<AuditService>(_db.Object, null!, webhookQueue);
+        var auditService = new Mock<IAuditService>();
         auditService.Setup(a => a.RecordAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
@@ -154,7 +154,7 @@ public class FeatureStateServiceTests
         var state = AddState();
         var queue = new WebhookQueue();
 
-        var auditService = new Mock<AuditService>(_db.Object, null!, queue);
+        var auditService = new Mock<IAuditService>();
         auditService.Setup(a => a.RecordAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int>(), It.IsAny<int?>(), It.IsAny<int?>(),
