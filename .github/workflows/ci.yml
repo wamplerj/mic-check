@@ -61,6 +61,7 @@ jobs:
       REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
       REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       QA_ADMIN_PORT: ${{ vars.QA_ADMIN_PORT }}
     steps:
       # actions/checkout@v4 is a Node-based action; this runner has no node
@@ -81,6 +82,7 @@ jobs:
     runs-on: [self-hosted, qa]
     env:
       QA_ADMIN_PORT: ${{ vars.QA_ADMIN_PORT }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
     steps:
       # actions/checkout@v4 is a Node-based action; this runner has no node
       # in PATH, so checkout plain git instead of via marketplace action.

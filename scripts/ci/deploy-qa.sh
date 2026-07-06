@@ -11,6 +11,7 @@ registry_login
 
 export API_IMAGE ADMIN_IMAGE
 export JWT_SECRET_KEY="${JWT_SECRET_KEY:?JWT_SECRET_KEY env var is required}"
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD env var is required}"
 export QA_ADMIN_PORT="${QA_ADMIN_PORT:-3001}"
 
 # Bind narrowly to docker's bridge gateway IP rather than 0.0.0.0: reachable

@@ -13,7 +13,7 @@ services:
     environment:
       POSTGRES_DB: miccheck
       POSTGRES_USER: miccheck
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
       - "${DB_BIND_HOST:-127.0.0.1}:55432:5432"
     volumes:
@@ -31,7 +31,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__miccheck: "Host=db;Database=miccheck;Username=miccheck;Password=password"
+      ConnectionStrings__miccheck: "Host=db;Database=miccheck;Username=miccheck;Password=${POSTGRES_PASSWORD}"
       Jwt__SecretKey: ${JWT_SECRET_KEY}
       Jwt__Issuer: MicCheck
       Jwt__Audience: MicCheck

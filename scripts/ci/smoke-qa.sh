@@ -22,7 +22,7 @@ BASE_URL="http://${CI_HOST}:${QA_ADMIN_PORT}"
 log "Resolved docker host as $CI_HOST for reaching the QA stack's published ports"
 
 export MICCHECK_API_BASE_URL="$BASE_URL"
-export MICCHECK_DB_CONNECTION_STRING="${MICCHECK_DB_CONNECTION_STRING:-Host=$CI_HOST;Port=55432;Database=miccheck;Username=miccheck;Password=password}"
+export MICCHECK_DB_CONNECTION_STRING="${MICCHECK_DB_CONNECTION_STRING:-Host=$CI_HOST;Port=55432;Database=miccheck;Username=miccheck;Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD env var is required}}"
 
 log "Running API integration suite against $BASE_URL"
 dotnet test tests/api/MicCheck.Api.Tests.Integration/MicCheck.Api.Tests.Integration.csproj -c Release --logger trx
